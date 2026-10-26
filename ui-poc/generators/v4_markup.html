@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Season Intelligence QC review, v4</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'IBM Plex Sans',system-ui,sans-serif;background:#f7f8f3;color:#1c2117}
+a{color:#0a7a0a}a:hover{color:#075c07}
+button{font-family:inherit;cursor:pointer}
+textarea,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1530px; box-sizing: border-box; display: flex; flex-direction: column; background: #f7f8f3; color: #1c2117; font-family: 'IBM Plex Sans', system-ui, sans-serif; position: relative">
+
+<header style="height: 56px; flex-shrink: 0; box-sizing: border-box; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; background: #ffffff; border-bottom: 1px solid #dcded3">
+<div style="display: flex; align-items: center; gap: 16px">
+<div style="font-family: Archivo, sans-serif; font-size: 18px; font-weight: 700">Season Intelligence QC</div>
+<div style="display: flex; align-items: center; gap: 4px">
+<button aria-label="Previous case" style="width: 32px; height: 32px; border: 1px solid #c7cabb; background: #ffffff; border-radius: 7px; font-size: 14px; color: #565c4d">‹</button>
+<div style="height: 32px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; border: 1px solid #c7cabb; border-radius: 7px; font-size: 13px; font-family: 'IBM Plex Mono', monospace">field 1321763 · cycle 5321127 ▾</div>
+<button aria-label="Next case" style="width: 32px; height: 32px; border: 1px solid #c7cabb; background: #ffffff; border-radius: 7px; font-size: 14px; color: #565c4d">›</button>
+</div>
+<div style="font-size: 12px; color: #565c4d">order <span style="font-family: 'IBM Plex Mono', monospace">887832</span> · corn · planted 05/09 · 6 passes · run 2026-08-30</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="font-size: 12px; color: #565c4d">Auto-fixed: <b>n/a in export</b> · Override: <b>{{overrideLabel}}</b></span>
+<button onClick="{{openSubmit}}" style="height: 38px; padding: 0 18px; font-size: 14px; font-weight: 700; color: #ffffff; background: #0a7a0a; border: none; border-radius: 8px">Review and submit</button>
+</div>
+</header>
+
+<section aria-label="Judge findings" style="flex-shrink: 0; box-sizing: border-box; padding: 14px 32px 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<div style="font-family: Archivo, sans-serif; font-size: 15px; font-weight: 700">Judge findings</div>
+<div style="font-size: 12.5px; color: #565c4d">{{sumMeta}} · Recommendation: {{recoMeta}} · {{resolvedLabel}}</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{findings}}" as="f" hint-placeholder-count="3">
+<button onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.cardStyle}}">
+<div style="display: flex; align-items: center; gap: 8px; width: 100%">
+<span style="{{f.dotStyle}}">{{f.num}}</span>
+<span style="flex: 1; min-width: 0; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.short}}</span>
+<span style="{{f.statusStyle}}">{{f.statusLabel}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%">
+<span style="{{f.critStyle}}">{{f.critLabel}}</span>
+<span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #eef0e7; color: #3d4235">{{f.rtype}}</span>
+<span style="font-size: 11px; color: #565c4d">score {{f.score}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 4px; width: 100%">
+<sc-for list="{{f.trail}}" as="t" hint-placeholder-count="3">
+<span style="{{t.style}}">{{t.label}}</span>
+</sc-for>
+</div>
+</button>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #565c4d; line-height: 1.4">{{relatedText}}</div>
+<div style="padding: 10px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<div style="font-size: 12.5px; line-height: 1.45; color: #3d4235"><div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700">{{sel.key}}</div><div>{{sel.desc}}</div></div>
+<div style="font-size: 12.5px; line-height: 1.45; padding: 6px 10px; background: #f7f8f3; border-radius: 6px"><b>Rule re-check:</b> {{sel.recheck}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div role="radiogroup" aria-label="Resolution" style="display: flex; gap: 4px; flex-wrap: wrap">
+<sc-for list="{{sel.statuses}}" as="st" hint-placeholder-count="4">
+<button role="radio" onClick="{{st.pick}}" style="{{st.style}}">{{st.label}}</button>
+</sc-for>
+</div>
+<label style="font-size: 11px; font-weight: 700; color: #565c4d">Note for this finding
+<textarea value="{{sel.note}}" onChange="{{sel.onNote}}" placeholder="Why it is (or isn't) an error, what you changed, question for the team…" style="display: block; width: 100%; height: 44px; box-sizing: border-box; margin-top: 3px; padding: 6px 8px; font-size: 12.5px; font-weight: 400; border: 1px solid #c7cabb; border-radius: 6px; resize: none"></textarea>
+</label>
+</div>
+</div>
+</section>
+
+<div style="height: 1090px; flex-shrink: 0; box-sizing: border-box; padding: 0 32px 24px; display: flex; gap: 14px; min-height: 0">
+
+<div style="width: 560px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0">
+<section aria-label="Summary" style="flex: 1 1 0; min-height: 0; box-sizing: border-box; padding: 12px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="font-family: Archivo, sans-serif; font-size: 15px; font-weight: 700">Summary</div>
+<span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #fbe3e0; color: #7a1815">3 failed</span>
+<span style="{{changedStyle}}">{{changedLabel}}</span>
+</div>
+<div style="display: flex; gap: 6px">
+<button onClick="{{resetText}}" style="height: 30px; padding: 0 10px; font-size: 12px; font-weight: 600; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb; border-radius: 7px">Reset</button>
+<button onClick="{{toggleEdit}}" style="{{editBtnStyle}}">{{editLabel}}</button>
+</div>
+</div>
+<sc-if value="{{viewMode}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{sumBlocks}}" as="p" hint-placeholder-count="6">
+<button data-jump="{{p.jumpId}}" onClick="{{p.pick}}" style="{{p.style}}">
+<sc-if value="{{p.hasHeading}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #3d4235; margin-bottom: 2px">{{p.heading}}</div>
+</sc-if>
+<span style="{{p.tagStyle}}">{{p.tag}}</span><sc-for list="{{p.segs}}" as="g" hint-placeholder-count="3"><span style="{{g.style}}">{{g.t}}</span></sc-for>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{editMode}}" hint-placeholder-val="{{ false }}">
+<textarea aria-label="Corrected summary" value="{{draft}}" onChange="{{onDraft}}" style="flex: 1; min-height: 0; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 13.5px; line-height: 1.55; border: 2px solid #0a7a0a; border-radius: 8px; resize: none"></textarea>
+</sc-if>
+</section>
+
+<section aria-label="Recommendations and analysis" style="flex: 1 1 0; min-height: 0; box-sizing: border-box; padding: 12px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: flex; flex-direction: column; gap: 8px">
+<div role="tablist" aria-label="Lower panel" style="display: flex; gap: 4px">
+<sc-for list="{{lowerTabs}}" as="t" hint-placeholder-count="2">
+<button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+<sc-if value="{{showReco}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px"><span style="font-size: 12px; color: #565c4d">{{recoMeta}}</span><span style="{{changedStyleR}}">{{changedLabelR}}</span></div>
+<div style="display: flex; gap: 6px">
+<button onClick="{{resetTextR}}" style="height: 30px; padding: 0 10px; font-size: 12px; font-weight: 600; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb; border-radius: 7px">Reset</button>
+<button onClick="{{toggleEditR}}" style="{{editBtnStyleR}}">{{editLabelR}}</button>
+</div>
+</div>
+<sc-if value="{{viewModeR}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{recoBlocks}}" as="p" hint-placeholder-count="4">
+<button data-jump="{{p.jumpId}}" onClick="{{p.pick}}" style="{{p.style}}"><span style="{{p.tagStyle}}">{{p.tag}}</span><sc-for list="{{p.segs}}" as="g" hint-placeholder-count="3"><span style="{{g.style}}">{{g.t}}</span></sc-for></button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{editModeR}}" hint-placeholder-val="{{ false }}">
+<textarea aria-label="Corrected recommendation" value="{{draftR}}" onChange="{{onDraftR}}" style="flex: 1; min-height: 0; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 13.5px; line-height: 1.55; border: 2px solid #0a7a0a; border-radius: 8px; resize: none"></textarea>
+</sc-if>
+</sc-if>
+<sc-if value="{{showAnalysis}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{anaBlocks}}" as="a" hint-placeholder-count="6">
+<button data-jump="{{a.jumpId}}" onClick="{{a.pick}}" style="{{a.style}}"><div style="font-size: 12px; font-weight: 700; color: #1c2117; margin-bottom: 2px">{{a.head}}</div><div style="white-space: pre-line">{{a.body}}</div></button>
+</sc-for>
+</div>
+</sc-if>
+</section>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0">
+<section aria-label="Final-pass yield loss" style="flex-shrink: 0; box-sizing: border-box; padding: 12px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<div style="font-family: Archivo, sans-serif; font-size: 15px; font-weight: 700">Final-pass yield loss <span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 500; color: #565c4d">· past + future at P6, bu/ac</span></div>
+<div style="font-size: 12px; color: #565c4d">Judge threshold, corn: <b>3 bu/ac</b></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{losses}}" as="l" hint-placeholder-count="5">
+<div style="{{l.style}}">
+<div style="font-size: 11.5px; font-weight: 600">{{l.label}}</div>
+<div style="font-size: 20px; font-weight: 700; font-family: Archivo, sans-serif">{{l.value}}</div>
+<div style="{{l.tagStyle}}">{{l.tag}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+<section aria-label="Input data" style="flex: 1 1 0; min-height: 0; box-sizing: border-box; overflow-y: auto; padding: 12px 14px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: flex; flex-direction: column; gap: 10px">
+%%INPUT_INNER%%</section>
+</div>
+</div>
+
+<sc-if value="{{showSubmit}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; top: 0; left: 0; width: 1440px; height: 1530px; background: rgba(28, 33, 23, 0.35); display: flex; align-items: flex-start; justify-content: center; padding-top: 110px; box-sizing: border-box">
+<div style="width: 820px; padding: 24px; background: #ffffff; border-radius: 12px; display: flex; flex-direction: column; gap: 14px">
+<sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}">
+<div style="font-family: Archivo, sans-serif; font-size: 20px; font-weight: 700">Confirm before sending to Argo</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{resolutionRows}}" as="rr" hint-placeholder-count="3">
+<div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; background: #f7f8f3; border-radius: 8px; font-size: 13px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{rr.num}} · {{rr.key}}</span><span style="{{rr.style}}">{{rr.label}}</span>
+</div>
+</sc-for>
+</div>
+<div style="{{warnStyle}}">{{warnText}}</div>
+<div style="font-size: 13px; color: #565c4d">{{changeSummary}} · sent as the full corrected text to <span style="font-family: 'IBM Plex Mono', monospace">ag-assistant-season-reco-override-by-agronomist</span> · parameters <span style="color: #7a4e08">[confirm with AJ]</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<label style="display: flex; align-items: center; gap: 8px; font-size: 14px"><input type="checkbox" checked="{{dryRun}}" onChange="{{toggleDry}}" style="width: 20px; height: 20px; accent-color: #0a7a0a">Dry run (don't submit)</label>
+<div style="display: flex; gap: 8px">
+<button onClick="{{closeSubmit}}" style="height: 40px; padding: 0 16px; font-size: 14px; font-weight: 600; background: #ffffff; color: #1c2117; border: 1px solid #c7cabb; border-radius: 8px">Cancel</button>
+<button onClick="{{doSubmit}}" style="height: 40px; padding: 0 18px; font-size: 14px; font-weight: 700; color: #ffffff; background: #0a7a0a; border: none; border-radius: 8px">{{submitLabel}}</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<div style="font-family: Archivo, sans-serif; font-size: 20px; font-weight: 700">{{doneTitle}}</div>
+<div style="font-size: 14px; line-height: 1.5; color: #3d4235">{{doneBody}}</div>
+<div style="display: flex; justify-content: flex-end"><button onClick="{{closeSubmit}}" style="height: 40px; padding: 0 18px; font-size: 14px; font-weight: 700; color: #ffffff; background: #0a7a0a; border: none; border-radius: 8px">Close</button></div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1530}}'>
+%%SCRIPT%%
+</script>
+</body>
+</html>

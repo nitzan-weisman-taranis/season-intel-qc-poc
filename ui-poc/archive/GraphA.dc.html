@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Graph option A, sparkline column</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'IBM Plex Sans',system-ui,sans-serif;background:#f7f8f3;color:#1c2117}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 1440px; height: 600px; box-sizing: border-box; padding: 24px 32px; display: flex; flex-direction: column; gap: 12px; background: #ffffff; color: #1c2117; font-family: 'IBM Plex Sans', system-ui, sans-serif">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="display: flex; align-items: center; gap: 16px">
+<div style="font-family: Archivo, sans-serif; font-size: 15px; font-weight: 700">Input data · per pass</div>
+<div role="tablist" aria-label="Input topic" style="display: flex; gap: 4px">
+<button role="tab" aria-selected="false" style="height: 30px; padding: 0 12px; font-size: 12.5px; font-weight: 600; border-radius: 7px; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb">Stand count</button>
+<button role="tab" aria-selected="false" style="height: 30px; padding: 0 12px; font-size: 12.5px; font-weight: 600; border-radius: 7px; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb">Weeds</button>
+<button role="tab" aria-selected="true" style="height: 30px; padding: 0 12px; font-size: 12.5px; font-weight: 600; border-radius: 7px; background: #0a7a0a; color: #ffffff; border: 1px solid #0a7a0a">Nutrients</button>
+<button role="tab" aria-selected="false" style="height: 30px; padding: 0 12px; font-size: 12.5px; font-weight: 600; border-radius: 7px; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb">Diseases</button>
+<button role="tab" aria-selected="false" style="height: 30px; padding: 0 12px; font-size: 12.5px; font-weight: 600; border-radius: 7px; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb">Insects</button>
+<button role="tab" aria-selected="false" style="height: 30px; padding: 0 12px; font-size: 12.5px; font-weight: 600; border-radius: 7px; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb">Weather</button>
+</div>
+</div>
+<div style="font-size: 12px; color: #565c4d">Planted 05/09 · threshold 5 bu/ac</div>
+</div>
+<div style="display: grid; grid-template-columns: 210px 150px repeat(6, minmax(0, 1fr)); gap: 4px">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8b9080; padding: 6px 8px">Field (input JSON)</div><div style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8b9080; padding: 6px 8px">Trend P1 → P6</div><sc-for list="{{passes}}" as="p" hint-placeholder-count="6">
+<div style="padding: 6px 8px; background: #eef0e7; border-radius: 6px">
+<div style="font-size: 11.5px; color: #565c4d">P{{p.n}} · {{p.date}} · <span style="font-family: 'IBM Plex Mono', monospace">{{p.order}}</span></div>
+<div style="font-size: 13px; font-weight: 700; color: #0a7a0a">{{p.stage}}</div>
+</div>
+</sc-for>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+<div style="{{r.labelStyle}}">{{r.field}}</div>
+<div style="{{r.trendStyle}}">
+<svg width="96" height="34" viewBox="0 0 96 34" aria-label="{{r.aria}}" role="img">
+<path d="{{r.thr}}" style="fill: none; stroke: #b9bcae; stroke-width: 1; stroke-dasharray: 3 2"></path>
+<path d="{{r.gaps}}" style="fill: none; stroke: #c7cabb; stroke-width: 1.5"></path>
+<path d="{{r.line}}" style="{{r.lineStyle}}"></path>
+<path d="{{r.dots}}" style="{{r.dotStyle}}"></path>
+<path d="{{r.hot}}" style="fill: #d98a1c; stroke: #7a3d0c; stroke-width: 1"></path>
+</svg>
+<div style="font-size: 10.5px; line-height: 1.25; white-space: pre-line; color: #565c4d; font-family: 'IBM Plex Mono', monospace">{{r.cap}}</div>
+</div>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="6">
+<div style="{{c.style}}">{{c.t}}</div>
+</sc-for>
+</sc-for>
+<div style="padding: 6px 8px; font-size: 12px; font-weight: 600; color: #3d4235; font-family: 'IBM Plex Mono', monospace">nutrients_recommendation</div>
+<div style="background: #fbfbf8; border-radius: 6px"></div>
+<sc-for list="{{recoRow.cells}}" as="c" hint-placeholder-count="6">
+<div style="{{c.style}}">{{c.t}}</div>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = [{ n: 1, date: '05/23', order: '887827', stage: 'VE-V1' }, { n: 2, date: '06/01', order: '887828', stage: 'V3-V4' }, { n: 3, date: '06/14', order: '887829', stage: 'V6-V12' }, { n: 4, date: '07/03', order: '887830', stage: 'V13-V16' }, { n: 5, date: '07/20', order: '887831', stage: 'VT-R1' }, { n: 6, date: '08/06', order: '887832', stage: 'R2-R4' }];
+    const R = [
+      { field: 'specific_nutrients', name: 'Potassium', unit: '%', kind: 'sev', color: '#256abf', v: [null, null, 0.85, 0.77, 0, 0] },
+      { field: '', name: 'Nitrogen', unit: '%', kind: 'sev', color: '#0a5c0a', v: [null, null, 0.43, 5.0, 2.78, 8.55] },
+      { field: '', name: 'Sulfur', unit: '%', kind: 'sev', color: '#d98a1c', v: [null, null, 0, 38.46, 0, 0] },
+      { field: 'yield_impact_nutrients', name: '', unit: ' bu/ac', kind: 'bu', color: '#565c4d', v: [null, null, 1, 35, 1, 1] },
+      { field: 'Yield loss · past', name: '', unit: '', kind: 'loss', color: '#7a3d0c', v: [0, 0, 0, 10.9, 12.0, 12.2] },
+      { field: 'Yield loss · future', name: '', unit: '', kind: 'loss', color: '#d98a1c', v: [0, 0, 0.6, 35.3, 0.7, 1.2] }
+    ];
+    const reco = ["–", "–", "An application of K-potassium is recommended. An application of N-Nitrogen is recommended.", "An application of K-potassium is recommended. An application of S-Sulfur is recommended. An application of N-Nitrogen is recommended.", "An application of N-Nitrogen is recommended.", "An application of N-Nitrogen is recommended."];
+    const fmt = (r, x) => x === null ? '–' : (r.kind === 'sev' ? (x === 0 ? '–' : r.name + ' ' + x + '%') : (r.kind === 'loss' ? x.toFixed(1) : x + r.unit));
+    const mono = "'IBM Plex Mono', monospace";
+    const labelStyle = (r) => 'padding: 6px 8px; font-size: 12px; font-weight: 600; color: #3d4235; font-family: ' + (r.kind === 'loss' ? "'IBM Plex Sans', sans-serif" : mono) + (r.kind === 'loss' ? '; background: #fbf6ec; border-radius: 6px' : '');
+    const cellStyle = (r, x) => {
+      const empty = x === null || (r.kind === 'sev' && x === 0) || (r.kind === 'loss' && x === 0);
+      const hot = r.kind === 'loss' && x >= 5;
+      return 'padding: 6px 8px; border-radius: 6px; line-height: 1.35; font-size: 12.5px; ' + (hot ? 'background: #f6d7b8; color: #6b3a0c; font-weight: 700' : (empty ? 'background: #fbfbf8; color: #a3a796' : (r.kind === 'loss' ? 'background: #fbf6ec' : 'background: #f7f8f3')));
+    };
+    const trim = (r) => { if (r.kind !== 'sev') return r.v; const nz = r.v.map((x, i) => (x !== null && x > 0) ? i : -1).filter((i) => i >= 0); if (!nz.length) return r.v.map(() => null); const a = nz[0], b = nz[nz.length - 1]; return r.v.map((x, i) => (i < a || i > b) ? null : x); };
+    const segs = (v, X, Y) => { let d = ''; let pen = false; v.forEach((x, i) => { if (x === null) { pen = false; return; } d += (pen ? ' L ' : ' M ') + X(i).toFixed(1) + ' ' + Y(x).toFixed(1); pen = true; }); return d.trim(); };
+    const dotsPath = (pts, rad) => pts.map((p) => 'M ' + (p[0] - rad).toFixed(1) + ' ' + p[1].toFixed(1) + ' a ' + rad + ' ' + rad + ' 0 1 0 ' + (2 * rad) + ' 0 a ' + rad + ' ' + rad + ' 0 1 0 ' + (-2 * rad) + ' 0').join(' ');
+    const recoRow = { cells: reco.map((t) => ({ t: t, style: 'padding: 6px 8px; border-radius: 6px; line-height: 1.35; font-size: 11.5px; ' + (t === '–' ? 'background: #fbfbf8; color: #a3a796' : 'background: #f7f8f3') })) };
+    const rows = R.map((r) => {
+      const nums = r.v.filter((x) => x !== null); const mx = Math.max(...nums, r.kind === 'loss' ? 5 : 0) || 1;
+      const X = (i) => 6 + i * 16.8; const Y = (x) => 30 - (x / mx) * 26;
+      const tv = trim(r);
+      const pts = tv.map((x, i) => x === null ? null : [X(i), Y(x)]).filter(Boolean);
+      const hotPts = r.v.map((x, i) => (r.kind === 'loss' && x !== null && x >= 5) ? [X(i), Y(x)] : null).filter(Boolean);
+      const gaps = r.v.map((x, i) => x === null ? 'M ' + (X(i) - 3).toFixed(1) + ' 31 L ' + (X(i) + 3).toFixed(1) + ' 31' : '').join(' ').trim();
+      return {
+        field: r.field, labelStyle: labelStyle(r), aria: (r.name || r.field) + ' trend', trendStyle: r.kind === 'sev' ? 'display: flex; align-items: center; gap: 6px; padding: 2px 6px; background: #fbfbf8; border-radius: 6px' : 'visibility: hidden',
+        line: segs(tv, X, Y), lineStyle: 'fill: none; stroke: ' + r.color + '; stroke-width: 2; stroke-linejoin: round',
+        dots: dotsPath(pts, 2.2), dotStyle: 'fill: #ffffff; stroke: ' + r.color + '; stroke-width: 1.5',
+        hot: dotsPath(hotPts, 2.8), gaps: gaps,
+        thr: r.kind === 'loss' ? 'M 2 ' + Y(5).toFixed(1) + ' L 94 ' + Y(5).toFixed(1) : '',
+        cap: (r.name ? r.name + '\n' : '') + 'max ' + Math.max(...nums) + (r.kind === 'sev' ? '%' : ''),
+        cells: r.v.map((x) => ({ t: fmt(r, x), style: cellStyle(r, x) }))
+      };
+    });
+    return { passes: P, rows: rows, recoRow: recoRow };
+  }
+}
+</script>
+</body>
+</html>
