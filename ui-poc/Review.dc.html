@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Season Intelligence QC review, v4</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'IBM Plex Sans',system-ui,sans-serif;background:#f7f8f3;color:#1c2117}
+a{color:#0a7a0a}a:hover{color:#075c07}
+button{font-family:inherit;cursor:pointer}
+textarea,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1530px; box-sizing: border-box; display: flex; flex-direction: column; background: #f7f8f3; color: #1c2117; font-family: 'IBM Plex Sans', system-ui, sans-serif; position: relative">
+
+<header style="height: 56px; flex-shrink: 0; box-sizing: border-box; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; background: #ffffff; border-bottom: 1px solid #dcded3">
+<div style="display: flex; align-items: center; gap: 16px">
+<div style="font-family: Archivo, sans-serif; font-size: 18px; font-weight: 700">Season Intelligence QC</div>
+<div style="display: flex; align-items: center; gap: 4px">
+<button aria-label="Previous case" style="width: 32px; height: 32px; border: 1px solid #c7cabb; background: #ffffff; border-radius: 7px; font-size: 14px; color: #565c4d">‹</button>
+<div style="height: 32px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; border: 1px solid #c7cabb; border-radius: 7px; font-size: 13px; font-family: 'IBM Plex Mono', monospace">field 1321763 · cycle 5321127 ▾</div>
+<button aria-label="Next case" style="width: 32px; height: 32px; border: 1px solid #c7cabb; background: #ffffff; border-radius: 7px; font-size: 14px; color: #565c4d">›</button>
+</div>
+<div style="font-size: 12px; color: #565c4d">order <span style="font-family: 'IBM Plex Mono', monospace">887832</span> · corn · planted 05/09 · 6 passes · run 2026-08-30</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="font-size: 12px; color: #565c4d">Auto-fixed: <b>n/a in export</b> · Override: <b>{{overrideLabel}}</b></span>
+<button onClick="{{openSubmit}}" style="height: 38px; padding: 0 18px; font-size: 14px; font-weight: 700; color: #ffffff; background: #0a7a0a; border: none; border-radius: 8px">Review and submit</button>
+</div>
+</header>
+
+<section aria-label="Judge findings" style="flex-shrink: 0; box-sizing: border-box; padding: 14px 32px 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<div style="font-family: Archivo, sans-serif; font-size: 15px; font-weight: 700">Judge findings</div>
+<div style="font-size: 12.5px; color: #565c4d">{{sumMeta}} · Recommendation: {{recoMeta}} · {{resolvedLabel}}</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{findings}}" as="f" hint-placeholder-count="3">
+<button onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.cardStyle}}">
+<div style="display: flex; align-items: center; gap: 8px; width: 100%">
+<span style="{{f.dotStyle}}">{{f.num}}</span>
+<span style="flex: 1; min-width: 0; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.short}}</span>
+<span style="{{f.statusStyle}}">{{f.statusLabel}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%">
+<span style="{{f.critStyle}}">{{f.critLabel}}</span>
+<span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #eef0e7; color: #3d4235">{{f.rtype}}</span>
+<span style="font-size: 11px; color: #565c4d">score {{f.score}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 4px; width: 100%">
+<sc-for list="{{f.trail}}" as="t" hint-placeholder-count="3">
+<span style="{{t.style}}">{{t.label}}</span>
+</sc-for>
+</div>
+</button>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #565c4d; line-height: 1.4">{{relatedText}}</div>
+<div style="padding: 10px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<div style="font-size: 12.5px; line-height: 1.45; color: #3d4235"><div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700">{{sel.key}}</div><div>{{sel.desc}}</div></div>
+<div style="font-size: 12.5px; line-height: 1.45; padding: 6px 10px; background: #f7f8f3; border-radius: 6px"><b>Rule re-check:</b> {{sel.recheck}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div role="radiogroup" aria-label="Resolution" style="display: flex; gap: 4px; flex-wrap: wrap">
+<sc-for list="{{sel.statuses}}" as="st" hint-placeholder-count="4">
+<button role="radio" onClick="{{st.pick}}" style="{{st.style}}">{{st.label}}</button>
+</sc-for>
+</div>
+<label style="font-size: 11px; font-weight: 700; color: #565c4d">Note for this finding
+<textarea value="{{sel.note}}" onChange="{{sel.onNote}}" placeholder="Why it is (or isn't) an error, what you changed, question for the team…" style="display: block; width: 100%; height: 44px; box-sizing: border-box; margin-top: 3px; padding: 6px 8px; font-size: 12.5px; font-weight: 400; border: 1px solid #c7cabb; border-radius: 6px; resize: none"></textarea>
+</label>
+</div>
+</div>
+</section>
+
+<div style="height: 1090px; flex-shrink: 0; box-sizing: border-box; padding: 0 32px 24px; display: flex; gap: 14px; min-height: 0">
+
+<div style="width: 560px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0">
+<section aria-label="Summary" style="flex: 1 1 0; min-height: 0; box-sizing: border-box; padding: 12px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="font-family: Archivo, sans-serif; font-size: 15px; font-weight: 700">Summary</div>
+<span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #fbe3e0; color: #7a1815">3 failed</span>
+<span style="{{changedStyle}}">{{changedLabel}}</span>
+</div>
+<div style="display: flex; gap: 6px">
+<button onClick="{{resetText}}" style="height: 30px; padding: 0 10px; font-size: 12px; font-weight: 600; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb; border-radius: 7px">Reset</button>
+<button onClick="{{toggleEdit}}" style="{{editBtnStyle}}">{{editLabel}}</button>
+</div>
+</div>
+<sc-if value="{{viewMode}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{sumBlocks}}" as="p" hint-placeholder-count="6">
+<button data-jump="{{p.jumpId}}" onClick="{{p.pick}}" style="{{p.style}}">
+<sc-if value="{{p.hasHeading}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #3d4235; margin-bottom: 2px">{{p.heading}}</div>
+</sc-if>
+<span style="{{p.tagStyle}}">{{p.tag}}</span><sc-for list="{{p.segs}}" as="g" hint-placeholder-count="3"><span style="{{g.style}}">{{g.t}}</span></sc-for>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{editMode}}" hint-placeholder-val="{{ false }}">
+<textarea aria-label="Corrected summary" value="{{draft}}" onChange="{{onDraft}}" style="flex: 1; min-height: 0; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 13.5px; line-height: 1.55; border: 2px solid #0a7a0a; border-radius: 8px; resize: none"></textarea>
+</sc-if>
+</section>
+
+<section aria-label="Recommendations and analysis" style="flex: 1 1 0; min-height: 0; box-sizing: border-box; padding: 12px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: flex; flex-direction: column; gap: 8px">
+<div role="tablist" aria-label="Lower panel" style="display: flex; gap: 4px">
+<sc-for list="{{lowerTabs}}" as="t" hint-placeholder-count="2">
+<button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+<sc-if value="{{showReco}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px"><span style="font-size: 12px; color: #565c4d">{{recoMeta}}</span><span style="{{changedStyleR}}">{{changedLabelR}}</span></div>
+<div style="display: flex; gap: 6px">
+<button onClick="{{resetTextR}}" style="height: 30px; padding: 0 10px; font-size: 12px; font-weight: 600; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb; border-radius: 7px">Reset</button>
+<button onClick="{{toggleEditR}}" style="{{editBtnStyleR}}">{{editLabelR}}</button>
+</div>
+</div>
+<sc-if value="{{viewModeR}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{recoBlocks}}" as="p" hint-placeholder-count="4">
+<button data-jump="{{p.jumpId}}" onClick="{{p.pick}}" style="{{p.style}}"><span style="{{p.tagStyle}}">{{p.tag}}</span><sc-for list="{{p.segs}}" as="g" hint-placeholder-count="3"><span style="{{g.style}}">{{g.t}}</span></sc-for></button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{editModeR}}" hint-placeholder-val="{{ false }}">
+<textarea aria-label="Corrected recommendation" value="{{draftR}}" onChange="{{onDraftR}}" style="flex: 1; min-height: 0; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 13.5px; line-height: 1.55; border: 2px solid #0a7a0a; border-radius: 8px; resize: none"></textarea>
+</sc-if>
+</sc-if>
+<sc-if value="{{showAnalysis}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{anaBlocks}}" as="a" hint-placeholder-count="6">
+<button data-jump="{{a.jumpId}}" onClick="{{a.pick}}" style="{{a.style}}"><div style="font-size: 12px; font-weight: 700; color: #1c2117; margin-bottom: 2px">{{a.head}}</div><div style="white-space: pre-line">{{a.body}}</div></button>
+</sc-for>
+</div>
+</sc-if>
+</section>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; min-height: 0">
+<section aria-label="Final-pass yield loss" style="flex-shrink: 0; box-sizing: border-box; padding: 12px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<div style="font-family: Archivo, sans-serif; font-size: 15px; font-weight: 700">Final-pass yield loss <span style="font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 500; color: #565c4d">· past + future at P6, bu/ac</span></div>
+<div style="font-size: 12px; color: #565c4d">Judge threshold, corn: <b>3 bu/ac</b></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{losses}}" as="l" hint-placeholder-count="5">
+<div style="{{l.style}}">
+<div style="font-size: 11.5px; font-weight: 600">{{l.label}}</div>
+<div style="font-size: 20px; font-weight: 700; font-family: Archivo, sans-serif">{{l.value}}</div>
+<div style="{{l.tagStyle}}">{{l.tag}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+<section aria-label="Input data" style="flex: 1 1 0; min-height: 0; box-sizing: border-box; overflow-y: auto; padding: 12px 14px 14px; background: #ffffff; border: 1px solid #dcded3; border-radius: 10px; display: flex; flex-direction: column; gap: 10px">
+<div style="position: sticky; top: -12px; z-index: 5; margin: -12px -14px 0; padding: 12px 14px 8px; background: #ffffff; border-bottom: 1px solid #eef0e7; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<div style="font-family: Archivo, sans-serif; font-size: 15px; font-weight: 700">Input data · per pass</div>
+<div role="tablist" aria-label="Input topic" style="display: flex; gap: 4px">
+<sc-for list="{{topicTabs}}" as="t" hint-placeholder-count="6">
+<button role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+</div>
+<div style="font-size: 12px; color: #565c4d">Planted 05/09 · soil: 52% silty clay, 48% silt loam · 67% moderately well, 33% somewhat poorly drained</div>
+</div>
+<sc-if value="{{notWeather}}" hint-placeholder-val="{{ true }}">
+<div style="{{gridStyle}}">
+<div style="padding: 6px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8b9080">Field (input JSON)</div>
+<sc-for list="{{passHeads}}" as="p" hint-placeholder-count="6">
+<div style="{{p.style}}">
+<div style="font-size: 11px; color: #565c4d">P{{p.n}} · {{p.date}} · <span style="font-family: 'IBM Plex Mono', monospace">{{p.order}}</span></div>
+<div style="font-size: 13px; font-weight: 700; color: #0a7a0a">{{p.stage}}</div>
+</div>
+</sc-for>
+<sc-if value="{{hasChart}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 8px; font-size: 11.5px; font-weight: 600; color: #565c4d">% of samples</div>
+<sc-for list="{{chart.gapCells}}" as="gc" hint-placeholder-count="2">
+<div style="{{gc.style}}">{{gc.t}}</div>
+</sc-for>
+<div style="{{chart.boxStyle}}">
+<svg viewBox="{{chart.viewBox}}" preserveAspectRatio="none" aria-label="{{chart.title}}" role="img" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%">
+<path d="{{chart.grid}}" style="fill: none; stroke: #e4e6dc; stroke-width: 1; vector-effect: non-scaling-stroke"></path>
+<path d="{{chart.l0}}" style="{{chart.s0}}"></path>
+<path d="{{chart.l1}}" style="{{chart.s1}}"></path>
+<path d="{{chart.l2}}" style="{{chart.s2}}"></path>
+<path d="{{chart.l3}}" style="{{chart.s3}}"></path>
+<path d="{{chart.l4}}" style="{{chart.s4}}"></path>
+<path d="{{chart.l5}}" style="{{chart.s5}}"></path>
+<path d="{{chart.l6}}" style="{{chart.s6}}"></path>
+<path d="{{chart.l7}}" style="{{chart.s7}}"></path>
+</svg>
+<sc-for list="{{chart.ticks}}" as="k" hint-placeholder-count="4">
+<div style="{{k.style}}">{{k.t}}</div>
+</sc-for>
+<div style="{{chart.colsStyle}}">
+<sc-for list="{{chart.cols}}" as="col" hint-placeholder-count="6">
+<div style="position: relative">
+<sc-for list="{{col.dots}}" as="dt" hint-placeholder-count="2">
+<div style="{{dt.style}}"></div>
+</sc-for>
+<sc-for list="{{col.labels}}" as="lb" hint-placeholder-count="2">
+<div style="{{lb.style}}">{{lb.t}}</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; padding: 2px 2px 6px">
+<div style="font-size: 12px; font-weight: 700; color: #3d4235">{{chart.title}}</div>
+<div style="display: grid; grid-template-columns: repeat(3, max-content); gap: 4px 32px">
+<sc-for list="{{chart.legend}}" as="s" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #3d4235; min-width: 0"><span style="{{s.swatch}}"></span><span>{{s.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #565c4d; white-space: nowrap">{{s.peak}}</span></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+<sc-for list="{{matrix}}" as="r" hint-placeholder-count="10">
+<div style="{{r.labelStyle}}"><span style="{{r.swatch}}"></span>{{r.label}}</div>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="6">
+<div style="{{c.style}}">{{c.t}}</div>
+</sc-for>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{isWeather}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8b9080">Weather thresholds · corn</div>
+<button onClick="{{toggleSoy}}" style="height: 28px; padding: 0 10px; font-size: 12px; font-weight: 600; background: #ffffff; color: #565c4d; border: 1px solid #c7cabb; border-radius: 7px">{{soyLabel}}</button>
+</div>
+<div style="display: grid; grid-template-columns: 120px 160px 70px 104px minmax(0, 1fr); gap: 4px; font-size: 11px; font-weight: 700; color: #8b9080; padding: 0 8px">
+<div>Threshold</div><div>Condition</div><div>Type</div><div>Result</div><div>Evidence</div>
+</div>
+<sc-for list="{{flags}}" as="f" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 120px 160px 70px 104px minmax(0, 1fr); gap: 4px; align-items: center; padding: 7px 8px; background: #f7f8f3; border-radius: 6px; font-size: 12.5px">
+<div style="font-weight: 600">{{f.name}}</div><div style="font-size: 12px; color: #3d4235">{{f.condition}}</div><div style="font-size: 12px; color: #565c4d">{{f.type}}</div><div><span style="{{f.style}}">{{f.result}}</span></div><div style="font-size: 12px; line-height: 1.45"><div style="font-family: 'IBM Plex Mono', monospace; color: #3d4235; white-space: pre-line">{{f.evidence}}</div><div style="font-weight: 700; color: #1f2419; margin-top: 2px">{{f.sum}}</div></div>
+</div>
+</sc-for>
+<sc-if value="{{showSoy}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #8b9080; margin-top: 8px">Soybean thresholds</div>
+<sc-for list="{{soy}}" as="y" hint-placeholder-count="12">
+<div style="display: grid; grid-template-columns: 120px 160px 70px 104px minmax(0, 1fr); gap: 4px; align-items: center; padding: 6px 8px; background: #fbfbf8; border-radius: 6px; font-size: 12px; color: #565c4d">
+<div style="font-weight: 600; color: #3d4235">{{y.name}}</div><div>{{y.condition}}</div><div>{{y.type}}</div><div>n/a · corn</div><div>{{y.note}}</div>
+</div>
+</sc-for>
+</sc-if>
+<div style="padding: 8px 10px; background: #fbe3e0; color: #7a1815; border-radius: 8px; font-size: 12.5px"><b>Input data issue:</b> P2 (order 887828) carries the same 22-day weather list as P1. Read as ending on its own flight date (06/01), it would put the 2.93 in rain on 05/25 instead of 05/16. Worth flagging to AJ.</div>
+</div>
+</sc-if>
+</section>
+</div>
+</div>
+
+<sc-if value="{{showSubmit}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; top: 0; left: 0; width: 1440px; height: 1530px; background: rgba(28, 33, 23, 0.35); display: flex; align-items: flex-start; justify-content: center; padding-top: 110px; box-sizing: border-box">
+<div style="width: 820px; padding: 24px; background: #ffffff; border-radius: 12px; display: flex; flex-direction: column; gap: 14px">
+<sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}">
+<div style="font-family: Archivo, sans-serif; font-size: 20px; font-weight: 700">Confirm before sending to Argo</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{resolutionRows}}" as="rr" hint-placeholder-count="3">
+<div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; background: #f7f8f3; border-radius: 8px; font-size: 13px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{rr.num}} · {{rr.key}}</span><span style="{{rr.style}}">{{rr.label}}</span>
+</div>
+</sc-for>
+</div>
+<div style="{{warnStyle}}">{{warnText}}</div>
+<div style="font-size: 13px; color: #565c4d">{{changeSummary}} · sent as the full corrected text to <span style="font-family: 'IBM Plex Mono', monospace">ag-assistant-season-reco-override-by-agronomist</span> · parameters <span style="color: #7a4e08">[confirm with AJ]</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<label style="display: flex; align-items: center; gap: 8px; font-size: 14px"><input type="checkbox" checked="{{dryRun}}" onChange="{{toggleDry}}" style="width: 20px; height: 20px; accent-color: #0a7a0a">Dry run (don't submit)</label>
+<div style="display: flex; gap: 8px">
+<button onClick="{{closeSubmit}}" style="height: 40px; padding: 0 16px; font-size: 14px; font-weight: 600; background: #ffffff; color: #1c2117; border: 1px solid #c7cabb; border-radius: 8px">Cancel</button>
+<button onClick="{{doSubmit}}" style="height: 40px; padding: 0 18px; font-size: 14px; font-weight: 700; color: #ffffff; background: #0a7a0a; border: none; border-radius: 8px">{{submitLabel}}</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<div style="font-family: Archivo, sans-serif; font-size: 20px; font-weight: 700">{{doneTitle}}</div>
+<div style="font-size: 14px; line-height: 1.5; color: #3d4235">{{doneBody}}</div>
+<div style="display: flex; justify-content: flex-end"><button onClick="{{closeSubmit}}" style="height: 40px; padding: 0 18px; font-size: 14px; font-weight: 700; color: #ffffff; background: #0a7a0a; border: none; border-radius: 8px">Close</button></div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1530}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.input = [{"key": "emergence", "label": "Stand count", "chart": null, "rows": [{"label": "Phenological stage", "cells": ["100% VE-V1", "100% V3-V4", "100% V6-V12", "100% V13-V16", "100% VT-R1", "100% R2-R4"]}, {"label": "Avg population", "cells": ["25197 /ac", "31336 /ac", "–", "–", "–", "–"]}, {"label": "Population % of target", "cells": ["81%", "101%", "–", "–", "–", "–"]}, {"label": "GDDs since planting", "cells": ["112", "226", "–", "–", "–", "–"]}, {"label": "Uniformity (samples near avg)", "cells": ["29%", "66%", "–", "–", "–", "–"]}, {"label": "CV · skips and gaps", "cells": ["CV 51.7%", "CV 36.7%", "–", "–", "–", "–"]}, {"label": "Patches", "cells": ["low: SW 20,254 · NE 20,797", "high: W 33,028", "–", "–", "–", "–"]}, {"label": "Yield loss · past", "cells": ["35.0", "0.0", "0.0", "0.0", "0.0", "0.0"]}, {"label": "Yield loss · future", "cells": ["35.0", "0.0", "0.0", "0.0", "0.0", "0.0"]}, {"label": "emergence_recommendation", "cells": ["An additional stand count mission is recommended, in 7 - 10 days.", "–", "–", "–", "–", "–"]}]}, {"key": "weeds", "label": "Weeds", "chart": {"field": "specific_weeds_missions", "title": "Weed severity by species, % of samples", "series": [{"name": "Volunteer corn", "v": [0.652, 0, 0, 0, 0, 0]}, {"name": "Broadleaf", "v": [0.003, 9.121, 0.026, 0.008, 0, 0.003]}, {"name": "Pigweeds", "v": [0, 0.026, 0.123, 0.002, 0.006, 0]}, {"name": "Barnyard grass", "v": [0, 0, 0.093, 0, 0.028, 0.152]}, {"name": "Grass", "v": [0, 0, 0.007, 0.009, 0.009, 0]}, {"name": "Foxtail", "v": [0, 0, 0, 0, 0.001, 0]}]}, "rows": [{"label": "weeds_detected (severity)", "cells": ["0.65%", "19.16%", "0.25%", "0.04%", "0.04%", "0.16%"]}, {"label": "weeds_pressure", "cells": ["mild", "very high", "mild", "mild", "mild", "mild"]}, {"label": "specific_weeds_missions", "cells": ["Volunteer corn 0.652%", "–", "–", "–", "–", "–"], "sw": 0}, {"label": "", "cells": ["Broadleaf 0.003%", "Broadleaf 9.121%", "Broadleaf 0.026%", "Broadleaf 0.008%", "–", "Broadleaf 0.003%"], "sw": 1}, {"label": "", "cells": ["–", "Pigweeds 0.026%", "Pigweeds 0.123%", "Pigweeds 0.002%", "Pigweeds 0.006%", "–"], "sw": 2}, {"label": "", "cells": ["–", "–", "Barnyard grass 0.093%", "–", "Barnyard grass 0.028%", "Barnyard grass 0.152%"], "sw": 3}, {"label": "", "cells": ["–", "–", "Grass 0.007%", "Grass 0.009%", "Grass 0.009%", "–"], "sw": 4}, {"label": "", "cells": ["–", "–", "–", "–", "Foxtail 0.001%", "–"], "sw": 5}, {"label": "specific_weeds_dominant", "cells": ["Volunteer corn, Broadleaf", "Pigweeds, Broadleaf", "Pigweeds, Barnyard grass, Broadleaf, Grass", "Pigweeds, Broadleaf, Grass", "Pigweeds, Barnyard grass, Foxtail, Grass", "Barnyard grass, Broadleaf"]}, {"label": "specific_weeds_minor", "cells": ["–", "Volunteer corn", "Nutsedges (Cyperus)", "Volunteer corn", "–", "–"]}, {"label": "allweeds_concentration", "cells": ["–", "–", "6.6% of area · NW, SW", "–", "–", "4.5% of area · NE"]}, {"label": "herbicide_products", "cells": ["–", "Acuron/Lexar, Harness Max/Diflexx Duo/Diflexx, Status", "Acuron/Lexar, Harness Max/Diflexx Duo/Diflexx, Status", "Acuron/Lexar, Harness Max/Diflexx Duo/Diflexx, Status", "Acuron/Lexar, Harness Max/Diflexx Duo/Diflexx, Status", "–"]}, {"label": "weeds_yield_impact", "cells": ["–", "–", "1 bu/ac", "0", "0", "0"]}, {"label": "Yield loss · past", "cells": ["0.2", "9.0", "9.6", "9.3", "10.4", "9.9"]}, {"label": "Yield loss · future", "cells": ["1.5", "49.9", "0.6", "0.1", "0.0", "0.0"]}, {"label": "weeds_recommendation", "cells": ["A herbicide application is optional.", "A herbicide application is recommended. This field should be prioritized for herbicide application.", "A herbicide application is optional.", "A herbicide application is optional.", "A herbicide application is optional.", "A herbicide application is optional."]}, {"label": "weeds_agent", "cells": ["–", "–", "Western weed pressure correlates with poorer emergence and drainage: 0.0398 avg severity with 93-97% emergence and 8.5-9.6% skips on 100% poor/moderate soils vs 0.00067, 101%, and 6.7% in the northeast. May 23rd-June 14th was wetter/warmer than normal (131.5 mm, 22.3°C), associated with the June 1st spike.", "Weed pressure peaked on June 1st (avg severity 0.1908, affected 100%) and fell by July 3rd (0.00034, 19.4%), associated with the crop staying at 100.8% emergence and V13-V16. No meaningful within-field correlation was found because only one northeastern region was present.", "Agentic correlation analysis was not performed. Last scouting passes showed consistently clean readings with no significant variation or change to investigate.", "Weeds correlate with slightly poorer establishment in the northeastern region: emergence averaged 98.0% and skip rate 8.76% in low-weed zones vs 100.9% and 6.63% where weeds were absent. They also correlate with a wetter soil mix, with 58.3% somewhat poorly drained vs 28.9% in the no-weed area."]}]}, {"key": "nutrients", "label": "Nutrients", "chart": {"field": "specific_nutrients", "title": "Deficiency severity by nutrient, % of samples", "series": [{"name": "Potassium", "v": [null, null, 0.85, 0.77, 0, 0]}, {"name": "Nitrogen", "v": [null, null, 0.43, 5.0, 2.78, 8.55]}, {"name": "Sulfur", "v": [null, null, 0, 38.46, 0, 0]}]}, "rows": [{"label": "specific_nutrients", "cells": ["–", "–", "Potassium 0.85%", "Potassium 0.77%", "–", "–"], "sw": 0}, {"label": "", "cells": ["–", "–", "Nitrogen 0.43%", "Nitrogen 5.0%", "Nitrogen 2.78%", "Nitrogen 8.55%"], "sw": 1}, {"label": "", "cells": ["–", "–", "–", "Sulfur 38.46%", "–", "–"], "sw": 2}, {"label": "localized_nutrient_regions", "cells": ["–", "–", "7% of field", "scattered", "10% of field", "scattered"]}, {"label": "nutrients_products", "cells": ["–", "–", "–", "Taurus Sulfur", "–", "–"]}, {"label": "yield_impact_nutrients", "cells": ["–", "–", "1 bu/ac", "35 bu/ac", "1 bu/ac", "1 bu/ac"]}, {"label": "Yield loss · past", "cells": ["0.0", "0.0", "0.0", "10.9", "12.0", "12.2"]}, {"label": "Yield loss · future", "cells": ["0.0", "0.0", "0.6", "35.3", "0.7", "1.2"]}, {"label": "nutrients_recommendation", "cells": ["–", "–", "An application of K-potassium is recommended. An application of N-Nitrogen is recommended.", "An application of K-potassium is recommended. An application of S-Sulfur is recommended. An application of N-Nitrogen is recommended.", "An application of N-Nitrogen is recommended.", "An application of N-Nitrogen is recommended."]}, {"label": "nutrients_agent", "cells": ["–", "–", "Nutrient deficiencies correlate most with the northwestern, somewhat poorly drained zone: avg severity 0.275 vs 0.238-0.247 in the moderately well drained SW/E, and N appeared only in NW at 0.0465. No meaningful correlation showed with disease or stage, since all regions were V6-V12 and disease was 0.0.", "Northeastern nutrient deficiencies correlate with 71% moderately well drained and 29% somewhat poorly drained soils, with avg severity 0.5005 and 47.8% affected vs ~0 in the southeast. They were at V13-V16, and May 16th's 74.4 mm rain plus June 6th's 37.0 mm rain are associated with uptake stress.", "Nutrient deficiencies correlate with moderately well/somewhat poorly drained soils in the southwestern and northeastern regions, with avg severity 0.284 vs 0.000 in the southeastern no-deficiency zone. Severity rose from 0.037 on June 14th to 0.338 on July 3rd, and N detections expanded after June 6th rain and during the July 10th-20th drought.", "High deficiencies correlate with moderately well drained, group C soils in the southwestern and northeastern regions: avg severity 0.366 vs 0.000004 and affected 25.6% vs 0.0%. Severity spikes on July 3rd (0.426; 40.3%) and August 6th (0.366; 25.6%), with S then N dominance after the July 10th-21st drought/heat."]}]}, {"key": "diseases", "label": "Diseases", "chart": {"field": "specific_diseases_dominant", "title": "Disease severity by type, % of samples", "series": [{"name": "GLS", "v": [null, null, 0, 3.08, 0, 0]}, {"name": "NCLB", "v": [null, null, 0, 0, 0, 0.43]}]}, "rows": [{"label": "specific_diseases_dominant", "cells": ["–", "–", "–", "GLS 3.08%", "–", "–"], "sw": 0}, {"label": "", "cells": ["–", "–", "–", "–", "–", "NCLB 0.43%"], "sw": 1}, {"label": "specific_diseases_minor", "cells": ["–", "–", "–", "–", "–", "–"]}, {"label": "disease_impacts", "cells": ["–", "–", "–", "–", "–", "NCLB: significant"]}, {"label": "localized_disease_regions", "cells": ["–", "–", "–", "9.9% of area · SW, NW", "–", "2.3% of area · NE"]}, {"label": "regional_detections", "cells": ["–", "–", "–", "NCLB 3 · GLS 4 · rust 1 fields / 20 mi", "GLS 8 · NCLB 7 fields / 20 mi", "NCLB 15 · GLS 11 · rust 1 fields / 20 mi"]}, {"label": "fungicide_products", "cells": ["–", "–", "–", "–", "–", "Miravis Neo, Delaro Complete, Veltyma"]}, {"label": "yield_impact_diseases", "cells": ["–", "–", "0", "0", "0", "0"]}, {"label": "Yield loss · past", "cells": ["0.0", "0.0", "0.0", "0.0", "0.2", "0.1"]}, {"label": "Yield loss · future", "cells": ["0.0", "0.0", "0.0", "0.0", "0.0", "0.0"]}, {"label": "diseases_recommendation", "cells": ["–", "–", "–", "–", "A fungicide application targeting Northern (Tercicum) corn leaf blight is recommended.", "A fungicide application targeting Northern (Tercicum) corn leaf blight is recommended."]}, {"label": "diseases_agent", "cells": ["–", "–", "Agentic correlation analysis was not performed. Last scouting passes showed consistently clean readings with no significant variation or change to investigate.", "Disease pressure is concentrated in the southwestern region, with avg severity 0.3748 vs 0.000005 in the northeastern region on July 3rd; it rose from 0.0 on June 14th to 30.67% affected. Warm, wet periods (262.2 mm rain, 74.4 mm on May 16th) are associated with this buildup.", "Disease pressure was absent in the northeastern region (0.0 avg severity on July 20th; 2.7% affected on July 3rd), so no meaningful correlation was found. The only co-located nutrient deficiency signal was minimal at 1.5% affected, which does not support a robust link.", "Agentic correlation analysis was not performed. Last scouting passes showed consistently clean readings with no significant variation or change to investigate."]}]}, {"key": "insects", "label": "Insects", "chart": {"field": "specific_insects", "title": "Insect severity by type, % of samples", "series": [{"name": "stink bug damage", "v": [null, null, 1.28, 0, 0, 0.43]}, {"name": "Insect - Other", "v": [null, null, 0.85, 0.38, 0.4, 0]}, {"name": "european corn borer damage", "v": [null, null, 0, 0.38, 0, 0]}, {"name": "Japanese Beetle", "v": [null, null, 0, 0.77, 0, 0]}, {"name": "Chewing damage", "v": [null, null, 0, 0, 13.49, 4.7]}, {"name": "Grasshoppers", "v": [null, null, 0, 0, 0, 0.43]}, {"name": "Insect pressure", "v": [null, null, 0, 0, 0, 7.26]}]}, "rows": [{"label": "overall_severity", "cells": ["–", "–", "mild", "mild", "moderate", "moderate"]}, {"label": "specific_insects", "cells": ["–", "–", "stink bug damage 1.28%", "–", "–", "stink bug damage 0.43%"], "sw": 0}, {"label": "", "cells": ["–", "–", "Insect - Other 0.85%", "Insect - Other 0.38%", "Insect - Other 0.4%", "–"], "sw": 1}, {"label": "", "cells": ["–", "–", "–", "european corn borer damage 0.38%", "–", "–"], "sw": 2}, {"label": "", "cells": ["–", "–", "–", "Japanese Beetle 0.77%", "–", "–"], "sw": 3}, {"label": "", "cells": ["–", "–", "–", "–", "Chewing damage 13.49%", "Chewing damage 4.7%"], "sw": 4}, {"label": "", "cells": ["–", "–", "–", "–", "–", "Grasshoppers 0.43%"], "sw": 5}, {"label": "", "cells": ["–", "–", "–", "–", "–", "Insect pressure 7.26%"], "sw": 6}, {"label": "insects_products", "cells": ["–", "–", "–", "Japanese Beetle: Leverage 360", "–", "Grasshopper: Leverage 360"]}, {"label": "yield_impact_insects", "cells": ["–", "–", "1 bu/ac", "1 bu/ac", "0", "0"]}, {"label": "Yield loss · past", "cells": ["0.0", "0.0", "0.0", "0.3", "0.3", "0.5"]}, {"label": "Yield loss · future", "cells": ["0.0", "0.0", "1.2", "1.0", "0.4", "0.2"]}, {"label": "insects_recommendation", "cells": ["–", "–", "If applying fungicide, add an insecticide due to detected instances of stink bug damage, Insect - Other.", "Apply an insecticide due to detections of Japanese Beetles.", "If applying fungicide, add an insecticide due to detected instances of Chewing damage, Insect - Other.", "If applying fungicide, add an insecticide due to detected instances of Grasshopper, stink bug damage, Chewing damage, Insect - Other."]}]}, {"key": "weather", "label": "Weather", "chart": null, "rows": []}];
+    this.flags = [
+      {"name": "Min emergence rain", "condition": "≥0.5 in within ~7 days of planting", "type": "Beneficial", "result": "Met", "tone": "good", "evidence": "Precip 05/09–05/16: 0.07 · 0.00 · 0.00 · 0.00 · 0.00 · 0.00 · 0.00 · 2.93 in", "sum": "Sum 3.00 in in 7 days → met (≥0.5 in)"},
+      {"name": "Excess rainfall at planting", "condition": "≥2 in within 48h or ≥3 in within 72h", "type": "Risk", "result": "Triggered", "tone": "risk", "evidence": "Precip 05/15 0.00 · 05/16 2.93 · 05/17 0.64 · 05/18 0.24 · 05/19 0.00 in", "sum": "48h sum 3.57 in (≥2), 72h sum 3.81 in (≥3) → triggered, 7–9 days after planting"},
+      {"name": "Drought flag", "condition": "No rain ≥7 days and VPD ≥2.0 kPa on ≥3 of them", "type": "Risk", "result": "Partial", "tone": "part", "evidence": "Precip 07/13–07/20: 0.00 · 0.00 · 0.00 · 0.00 · 0.00 · 0.00 · 0.00 · 0.00 in\nTmax 85.3 · 68.7 · 86.0 · 88.7 · 71.4 · 90.7 · 77.4 · 97.3°F", "sum": "Sum 0.00 in over 8 days → dry-spell part met (VT–R1); VPD not in input"},
+      {"name": "Extreme precip", "condition": "≥3 in/day at V2–V5 (N runoff risk)", "type": "Risk", "result": "Partial", "tone": "part", "evidence": "Max daily precip: 05/16 2.93 in (VE) · 06/13 0.37 in · 07/03 0.35 in", "sum": "Max 2.93 in/day < 3 → not met where data exists; no daily data 05/24–06/06 (V2–V5)"},
+      {"name": "Frost risk", "condition": "Tmin <35°F", "type": "Risk", "result": "Insufficient data", "tone": "part", "evidence": "Coolest Tmax: 05/05 57.4 · 05/06 60.1 · 05/18 56.7 · 05/19 61.3°F", "sum": "Lowest Tmax 56.7°F; Tmin not in input → cannot evaluate"}
+    ];
+    this.soy = [
+      { name: 'Drought flag', condition: 'No rain ≥7 days and VPD ≥2.0 kPa on ≥3 of the days', type: 'Risk', note: 'Same as corn · partial at best (no VPD)' },
+      { name: 'Min emergence rain', condition: '≥0.5 in within ~7 days of planting', type: 'Beneficial', note: 'Same as corn' },
+      { name: 'Excess rainfall at planting', condition: '≥2 in within 48h or ≥3 in within 72h', type: 'Risk', note: 'Same as corn' },
+      { name: 'Frost risk (emergence)', condition: 'Tmin <32°F at VE; <28°F at VC–V1', type: 'Risk', note: 'Needs Tmin · stage-gated' },
+      { name: 'Imbibitional chilling', condition: 'Tmin <45°F + cold rain within 48h of planting, soil <50°F', type: 'Risk', note: 'Partial at best (no soil temp)' },
+      { name: 'Flowering heat stress', condition: 'Tmax >95°F at R1', type: 'Risk', note: 'Stage-gated to R1' },
+      { name: 'Critical flowering heat', condition: 'Tmax >100°F for 3+ consecutive days at R1', type: 'Risk', note: 'Stage-gated to R1' },
+      { name: 'Night heat · flowering', condition: 'Tmin >73°F at R1', type: 'Risk', note: 'Needs Tmin · stage-gated' },
+      { name: 'Pod set heat', condition: 'Tmax >95°F at R2–R4 (with very dry conditions)', type: 'Risk', note: 'Stage-gated to R2–R4' },
+      { name: 'Seed fill heat (day)', condition: 'Tmax >90°F at R5–R6 (with very dry conditions)', type: 'Risk', note: 'Stage-gated to R5–R6' },
+      { name: 'Seed fill heat optimum (night)', condition: 'Tmin ~65–72°F at R5–R7', type: 'Beneficial', note: 'Needs Tmin · stage-gated' },
+      { name: 'Favorable pollination', condition: 'Tmax 75–90°F + precip ≥0.5 in + no drought flag', type: 'Beneficial', note: 'Depends on drought flag' }
+    ];
+    this.passes = [
+      { n: 1, date: '05/23', order: '887827', stage: 'VE-V1' }, { n: 2, date: '06/01', order: '887828', stage: 'V3-V4' }, { n: 3, date: '06/14', order: '887829', stage: 'V6-V12' },
+      { n: 4, date: '07/03', order: '887830', stage: 'V13-V16' }, { n: 5, date: '07/20', order: '887831', stage: 'VT-R1' }, { n: 6, date: '08/06', order: '887832', stage: 'R2-R4' }
+    ];
+    this.summary = "**Season Conclusion:**\nPersistent potassium and sulfur deficiencies likely had a significant impact on yield potential, while moderate weed pressure and unresolved stink bug activity at the critical reproductive window likely had a moderate yield impact.\n\n**Season Detail:**\nStand count was 101% detections in the field of target, indicating strong emergence and establishment.\n\nWeed pressure was mild at VE-V1, escalated to very high at V3-V4, then declined to mild and remained mild through the rest of the season; pigweeds, barnyard grass, and volunteer corn were dominant, with pressure concentrated in localized pockets and favorable moisture following 2.9 in of rain on May 16 likely supporting additional weed germination — likely having a moderate yield impact.\n\nPotassium deficiency was first detected at V6-V12 (0.8% detections in the field), concentrated in about 7% of the field, and was no longer detected by the final mission. Nitrogen deficiency was first detected at V6-V12 (0.4%), peaking at 8.6%, and sulfur deficiency was detected once at V13-V16 (38.5%) — persistent deficiencies likely had a significant yield impact.\n\nGray Leaf Spot was first detected at V13-V16 (3.1% detections in the field), with no in-field detection by the final mission, and was detected regionally alongside in-field detection in up to 11 fields. NCLB was detected once at R2-R4 (0.4%), with regional presence in up to 15 fields before in-field detection. Conditions between May 9 and May 23 were also conducive to disease spread. Rust was present in up to 1 field regionally but was not detected in this field — likely negligible yield impact.\n\nJapanese beetle was first detected at V13-V16 (0.8% detections in the field), not detected by the final mission, and was outside the pollination window. Stink bug was detected at R2-R4 (0.4%) and remained present at the final mission, with feeding within the kernel set window. European corn borer was detected during the season but not at the final mission, with whorl feeding at V6–V8. Chewing damage increased to 13.5% at VT-R1, grasshopper and insect pressure were each detected at low levels at R2-R4, and overall insect pressure remained low — likely negligible yield impact.\n";
+    this.analysis = "Emergence — Season Priority: Low\n  Scenario: Good Emergence\n  Stand count (latest early-season reading): 31,336 plants/acre (101% of target)\n  Uniformity: Good (CV 36.7%)\n  Phenological state: uniform\n  Description: Stand count was 101% of target and with low variability (CV 36.7%). Strong emergence and establishment.\n  Yield impact: no — stand established well\n\nWeeds — Season Priority: Moderate\n  Scenario: Start Absent/Low → Middle Med/High → End Absent/Low\n  Status: Managed\n  Materiality: Moderate\n  First detected: Mission 1 (Representative stage: VE-V1)\n  Species: Pigweeds (V3-V4, V6-V12, V13-V16, VT-R1), Barnyard grass (V6-V12, VT-R1, R2-R4), Volunteer corn (VE-V1)\n  Description: Weed pressure was mild at Mission 1 (VE-V1), escalated to very high at Mission 2 (V3-V4), declined to mild at Mission 3 (V6-V12), remained mild through Mission 4 (V13-V16), remained mild through Mission 5 (VT-R1), remained mild through Mission 6 (R2-R4). Early weed pressure suggests pre-emergence control was incomplete, but later applications effectively reduced competition. Favorable moisture following 2.9 in of rain on May 16 may have supported additional weed germination.\n  Spatial distribution:\n    - pockets: mild pressure throughout — Weed pressure was concentrated in localized pockets across the field, and early weed pressure suggests pre-emergence control was incomplete, but later applications effectively reduced competition.\n  Yield impact: yes — some competitive drag on yield is plausible but not confirmed significant.\n\nDiseases — Season Priority: High\n  Scenario: Start Absent/Low → Middle Med/High → End Absent/Low\n  Status: Managed\n  Materiality: Negligible\n  First detected: Mission 4 (V13-V16)\n  Type: Gray Leaf Spot, Northern (Tercicum) corn leaf blight\n  Description: Gray Leaf Spot was first detected in-field at Mission 4 (V13-V16), 3.1% detections in the field; no longer detected in-field by the final mission (Mission 6/6). Gray Leaf Spot was also detected regionally in up to 11 field(s) within a 20-mile radius, around the same time it was detected in-field. Northern (Tercicum) corn leaf blight was detected once, at Mission 6 (R2-R4), 0.4% — a single data point, not a trajectory. Northern (Tercicum) corn leaf blight was also detected regionally in up to 15 field(s) within a 20-mile radius, before it was detected in-field. Conditions between May 9 and May 23 were also conducive to disease spread. Rust was detected in fields within a 20-mile radius during the late season, but was not detected in this field.\n  Spatial distribution:\n    - pockets: Negligible pressure — Disease detections were concentrated in localized pockets across the field, concentrated in about 9.9% of the total area.\n  Yield impact: no — disease pressure was limited and canopy function was largely maintained.\n\nNutrients — Season Priority: High\n  Scenario: Steady Medium\n  Status: Unresolved\n  Materiality: Significant\n  First detected: Mission 3 (Representative stage: V6-V12)\n  Type: Potassium, Nitrogen, Sulfur\n  Description: Potassium deficiency was first detected at Mission 3, with 0.8% detections in the field at V6-V12, concentrated in about 7% of the field, and was no longer detected by the final mission. Nitrogen deficiency was first detected at Mission 3, with 0.4% at V6-V12, peaked at 8.6%. Sulfur deficiency was detected once, at Mission 4, with 38.5% at V13-V16.\n  Spatial distribution:\n    - pockets: Significant deficiency — Deficiency was concentrated in about 10% of the field.\n  Yield impact: yes — persistent deficiency likely limited nutrient availability during a yield-relevant growth stage.\n\nInsects — Season Priority: Moderate\n  Scenario: Start Absent/Low → End Med/High\n  Status: Unresolved\n  Materiality: Negligible\n  First detected: Mission 3 (Representative stage: V6-V12)\n  Type: stink bug damage, european corn borer damage, Japanese Beetle, Chewing Damage, Grasshopper, Stink Bug, Chewing, Insect pressure\n  Species status:\n    Japanese Beetle: Managed (not detected by the final mission), Critical window: outside VT–R1 (pollination window — likely negligible yield impact)\n    Stink Bug: Unresolved (still present at the final mission), Critical window: within R1–R3 (kernel feeding during set)\n    European Corn Borer: Managed (not detected by the final mission), Critical window: at V6–V8 (whorl feeding — generally recoverable)\n  Low-impact detections:\n  - Insect - Other: 0.8% at V6-V12\n  - Chewing damage: 13.5% at VT-R1\n  - Grasshoppers: 0.4% at R2-R4\n  - Chewing: 4.7% at R2-R4\n  - Insect pressure: 7.3% at R2-R4\n  Description: Japanese Beetle was first detected at Mission 4 (V13-V16) at 0.8% detections in the field. Critical window: outside VT–R1 (pollination window — likely negligible yield impact). This appears managed (not detected by the final mission). Stink Bug was first detected at Mission 6 (R2-R4) at 0.4%. Critical window: within R1–R3 (kernel feeding during set). Status: Unresolved (still present at the final mission). European Corn Borer was detected during the season. Critical window: at V6–V8 (whorl feeding — generally recoverable). This appears managed (not detected by the final mission). stink bug damage was first detected at Mission 3 (V6-V12) at 1.3%. european corn borer damage was first detected at Mission 4 (V13-V16) at 0.4%. Chewing Damage was first detected at Mission 5 (VT-R1) at 13.5%. Grasshopper was first detected at Mission 6 (R2-R4) at 0.4%. Chewing was first detected at Mission 6 (R2-R4) at 4.7%. Insect pressure was first detected at Mission 6 (R2-R4) at 7.3%. Overall, insect pressure remained low throughout the season, with no material impact on crop development.\n  Yield impact: no — pressure was low-impact or well controlled with limited yield risk.\n\nWeather Context\n  Conditions that likely shaped yield outcomes:\n  - Heavy precipitation events (May 16 (2.9 in)) between planting and Mission 1 likely contributed to soil compaction and emergence challenges.\n  - High humidity conducive to disease spread was present for 5 days within May 18–May 22; 7 days within Jun 15–Jun 27; 8 days within Jul 22–Aug 6, coinciding with in-field disease detections.";
+    this.checks = [{"id": "F1", "key": "SEASON_SUMMARY_STAGE_CITED_NOT_RECORDED", "critical": true, "score": "0", "rtype": "Against input · stages", "threat": "insects", "rule": "stage", "desc": "A growth-stage token cited anywhere in the summary must match some mission's actual (Representative, or clearly-dominant) stage reading in season_data -- never a stage no mission recorded. Dominant pattern (c) from the original annotator review: a fabricated stage citation, distinct from the trend-language checks above.", "short": "STAGE_CITED_NOT_RECORDED", "trail": ["pass", "fail", "none"]}, {"id": "F2", "key": "SEASON_SUMMARY_CONCLUSION_YIELD_IMPACT_COVERAGE", "critical": false, "score": "0", "rtype": "Against yield loss", "threat": "insects", "rule": "yield", "desc": "Season Conclusion must include exactly the threat categories whose Final_Yield_Impact (past + future bu/ac loss from the final mission, from the YIELD IMPACT DATA block) crosses the crop-specific threshold — corn: 5 bu/ac, soy: 3 bu/ac — and must omit any category that does not cross it", "short": "CONCLUSION_YIELD_IMPACT_COVERAGE", "trail": ["none", "fail", "none"]}, {"id": "F3", "key": "SEASON_SUMMARY_WEED_TREND_REACHES_FINAL_MISSION", "critical": false, "score": "0", "rtype": "Against input · weeds", "threat": "weeds", "rule": "weedtrend", "desc": "The weed block's last stage-bound pressure claim must not be superseded by a mission the narrative never reaches. Field 1312426 says \"remained moderate through V13-V16\" of a record whose sixth and final mission records Pressure: high at R2-R4 — every clause true, and the season reported as ending moderate when it ended high. Neighbour to SEASON_SUMMARY_WEED_TREND_GROUNDED, which asks whether a resolution or decrease claim is CONTRADICTED by the final mission; a block that fails that one is not graded here, so one sentence is never two criteria's 0. Span claims (\"remained high throughout the season\") bind to no mission and reach the end by construction, so they are out of scope.", "short": "WEED_TREND_REACHES_FINAL_MISSION", "trail": ["none", "fail", "none"]}];
+    this.reco = "Consider redesigning the weed management program with a stronger pre-emergence residual targeting pigweeds, barnyard grass, and broadleaf species to close the gap that allowed early-season escapes.\n\nBe ready to spray a fungicide targeting Gray Leaf Spot, Northern Corn Leaf Blight, and Rust at the VT window if in-field and regional foliar disease pressure are similar to this season. Crop rotation and debris management reduce the risk of Gray Leaf Spot and Northern Corn Leaf Blight next year by minimizing overwintering fungus.\n\nReview nutrient timing, placement, and loss mitigation practices. Consider soil sampling the affected areas and adjusting the fertility program before planting to address persistent potassium deficiency.\n\nConsider a targeted response to stink bug at the R1–R3 window next season if pressure develops — monitor for stink bug presence beginning at early reproductive stages.";
+    this.related = {"analysisFails": ["INSECT_STAGE_ATTRIBUTION_2"], "sumFixed": ["DISEASE_CONDUCIVE_CONDITIONS"], "recoFixed": ["NUTRIENT_LEACHING_RAIN_PRECEDES_DETECTION", "WEED_POST_EM_TIMING", "NO_UNHEDGED_EFFECTIVE_MANAGEMENT"], "sumAvg": 9.62, "recoAvg": 10.0, "recoN": 45, "sumN": 79, "anaN": 66, "anaAvg": 9.85};
+    this.colors = ['#c0392b', '#256abf', '#8e44ad'];
+    this.wash = ['#f9dcd8', '#dde8f7', '#ecdff4'];
+    this.finalLoss = [['emergence', 'Stand count', 0.0], ['weeds', 'Weeds', 10.0], ['nutrients', 'Nutrients', 13.4], ['insects', 'Insects', 0.7], ['diseases', 'Diseases', 0.1]];
+    this.threshold = 3;
+    this.state = { selF: 'F1', threat: 'insects', edit: false, draft: this.summary, editR: false, draftR: this.reco, lower: 'reco', status: { F1: 'open', F2: 'open', F3: 'open' }, notes: { F1: '', F2: '', F3: '' }, showSubmit: false, done: false, dryRun: true, lastDry: true, applied: 0, showSoy: false };
+  }
+
+  blocks(text) {
+    const chunks = text.split(/\n\s*\n/).map((c) => c.trim()).filter(Boolean);
+    const out = [];
+    chunks.forEach((c) => {
+      let heading = '';
+      let body = c;
+      const m = c.match(/^\*\*(Season Conclusion|Season Detail):\*\*\s*/);
+      if (m) { heading = m[1]; body = c.slice(m[0].length).trim(); }
+      if (!body) { out.push({ heading: heading, body: '', threat: '' }); return; }
+      let threat = 'weather';
+      if (heading === 'Season Conclusion') threat = 'conclusion';
+      else if (/stand count|emergence/i.test(body)) threat = 'emergence';
+      else if (/weed/i.test(body)) threat = 'weeds';
+      else if (/deficien|potassium|nitrogen|sulfur/i.test(body)) threat = 'nutrients';
+      else if (/leaf spot|nclb|blight|rust|disease/i.test(body)) threat = 'diseases';
+      else if (/beetle|stink bug|insect|borer|chewing/i.test(body)) threat = 'insects';
+      out.push({ heading: heading, body: body, threat: threat });
+    });
+    // merge a bare "Season Detail" header into the block that follows it
+    const merged = [];
+    out.forEach((b) => { if (!b.body && merged.length >= 0) { b.pending = true; merged.push(b); return; } const prev = merged[merged.length - 1]; if (prev && prev.pending) { merged.pop(); b.heading = prev.heading; } merged.push(b); });
+    return merged.filter((b) => b.body);
+  }
+
+  ruleCheck(blocks) {
+    const STAGE = /(?<![A-Za-z0-9])(?:V[ET]|V\d{1,2}|R\d)(?:\s*[-–]\s*(?:V[ET]|V\d{1,2}|R\d))?(?![A-Za-z0-9])/g;
+    const norm = (t) => t.replace(/\s/g, '').replace('–', '-');
+    const recorded = this.passes.map((p) => p.stage);
+    const marks = blocks.map(() => []);
+    const re = {};
+    // F1 · stage cited not recorded
+    const bad = [];
+    blocks.forEach((b, i) => { let m; STAGE.lastIndex = 0; while ((m = STAGE.exec(b.body))) { if (recorded.indexOf(norm(m[0])) < 0) { marks[i].push({ s: m.index, e: m.index + m[0].length, f: 'F1' }); bad.push(m[0] + ' (' + b.threat + ')'); } } });
+    const terms = { F1: [], F2: [], F3: [] };
+    marks.forEach((ml, i) => ml.forEach((m) => { if (m.f === 'F1') terms.F1.push(blocks[i].body.slice(m.s, m.e)); }));
+    re.F1 = bad.length ? bad.map((x) => '"' + x.replace(' (', '" (').replace(/\(([a-z])/, (m, c) => '(' + c.toUpperCase())).join(', ') + ' is not a recorded stage · Recorded: ' + recorded.join(', ') : 'No unrecorded stage found';
+    // F2 · conclusion yield coverage
+    const ci = blocks.findIndex((b) => b.threat === 'conclusion');
+    const pats = { emergence: /stand count|emergence/gi, weeds: /weed\w*/gi, nutrients: /potassium|sulfur|nitrogen|nutrient\w*/gi, insects: /stink bug\w*|insect\w*|beetle\w*|corn borer/gi, diseases: /disease\w*|gray leaf spot|nclb|rust|blight/gi };
+    const named = {};
+    if (ci >= 0) {
+      const body = blocks[ci].body;
+      this.finalLoss.forEach((l) => {
+        const p = pats[l[0]]; p.lastIndex = 0; let m; const hits = [];
+        while ((m = p.exec(body))) hits.push(m);
+        if (hits.length) {
+          named[l[0]] = hits.map((h) => h[0]);
+          if (l[2] < this.threshold) hits.forEach((h) => { marks[ci].push({ s: h.index, e: h.index + h[0].length, f: 'F2' }); terms.F2.push(h[0]); });
+        }
+      });
+    }
+    const extra = this.finalLoss.filter((l) => named[l[0]] && l[2] < this.threshold).map((l) => l[1] + ' ' + l[2].toFixed(1) + ' ("' + named[l[0]][0] + '")');
+    const missing = this.finalLoss.filter((l) => !named[l[0]] && l[2] >= this.threshold).map((l) => l[1] + ' ' + l[2].toFixed(1));
+    const ok = this.finalLoss.filter((l) => named[l[0]] && l[2] >= this.threshold).map((l) => l[1] + ' ' + l[2].toFixed(1));
+    re.F2 = 'Below ' + this.threshold + ' bu/ac but named: ' + (extra.join(', ') || 'none') + ' · Above ' + this.threshold + ', named: ' + (ok.join(', ') || 'none') + ' · Missing: ' + (missing.join(', ') || 'none');
+    // F3 · weed trend reaches final mission
+    const wi = blocks.findIndex((b) => b.threat === 'weeds');
+    const finalStage = this.passes[this.passes.length - 1].stage;
+    const wt = this.input.find((t) => t.key === 'weeds');
+    const pr = wt ? wt.rows.find((r) => r.label === 'weeds_pressure') : null;
+    const p6 = pr ? pr.cells[pr.cells.length - 1] : '–';
+    re.F3 = 'No weed block found.';
+    if (wi >= 0) {
+      const body = blocks[wi].body; let m; let last = null; STAGE.lastIndex = 0;
+      while ((m = STAGE.exec(body))) last = m;
+      if (last) {
+        let s0 = last.index + last[0].length; while (/[,\s]/.test(body[s0])) s0++;
+        const rest = body.slice(s0); const cut = rest.search(/[;.]/); const e0 = s0 + (cut < 0 ? rest.length : cut);
+        if (norm(last[0]) !== finalStage) marks[wi].push({ s: s0, e: e0, f: 'F3' });
+        re.F3 = 'Last weed stage cited: ' + last[0] + ' · Final pass P6 (' + finalStage + '): weeds_pressure "' + p6 + '"';
+      }
+    }
+    terms.F3 = ['remained mild', 'rest of the season', 'through the season'];
+    return { marks: marks, recheck: re, named: named, terms: terms };
+  }
+
+  carry(rblocks, terms) {
+    const marks = rblocks.map(() => []);
+    const found = { F1: [], F2: [], F3: [] };
+    Object.keys(terms).forEach((f) => {
+      const uniq = Array.from(new Set(terms[f].map((t) => t.toLowerCase())));
+      rblocks.forEach((b, i) => {
+        const low = b.body.toLowerCase();
+        uniq.forEach((t) => { let k = low.indexOf(t); while (k >= 0) { marks[i].push({ s: k, e: k + t.length, f: f }); found[f].push('"' + b.body.slice(k, k + t.length) + '" in the ' + b.threat + ' block'); k = low.indexOf(t, k + t.length); } });
+      });
+    });
+    Object.keys(found).forEach((f) => { const n = {}; found[f].forEach((x) => { n[x] = (n[x] || 0) + 1; }); found[f] = Object.keys(n).map((x) => n[x] > 1 ? x + ' (' + n[x] + '×)' : x); });
+    return { marks: marks, found: found };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const statusDefs = [['open', 'Open'], ['fixed', 'Fixed in edit'], ['false', 'Judge false claim'], ['team', 'Question for team']];
+    const statusTone = { open: 'background: #fbe3e0; color: #7a1815', fixed: 'background: #e3f2df; color: #075c07', false: 'background: #e6e3f4; color: #4b4380', team: 'background: #fbefd9; color: #7a4e08' };
+    const blocks = this.blocks(this.summary);
+    const rc = this.ruleCheck(blocks);
+    const rblocks = this.reco.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean).map((body) => {
+      let threat = 'weather';
+      if (/weed/i.test(body)) threat = 'weeds'; else if (/fungicide|leaf spot|blight|rust|disease/i.test(body)) threat = 'diseases'; else if (/nutrient|potassium|nitrogen|sulfur|fertility/i.test(body)) threat = 'nutrients'; else if (/stink bug|insect|beetle|borer/i.test(body)) threat = 'insects'; else if (/stand|emergence|planter/i.test(body)) threat = 'emergence';
+      return { heading: '', body: body, threat: threat };
+    });
+    const co = this.carry(rblocks, rc.terms);
+    const fidx = (id) => this.checks.findIndex((c) => c.id === id);
+    const selC = this.checks.find((c) => c.id === s.selF);
+    const trailDef = { pass: ['passed', 'background: #e3f2df; color: #075c07'], fail: ['failed', 'background: #fbe3e0; color: #7a1815'], unknown: ['not in export', 'background: #ffffff; color: #565c4d; border: 1px dashed #b9bcae'], none: ['no check', 'background: #f7f8f3; color: #a3a796'] };
+    const jumpF = (t) => setTimeout(() => { ['sum', 'reco', 'ana'].forEach((pre) => { const el = document.querySelector('[data-jump="' + pre + '-' + t + '"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }); }, 60);
+    const findings = this.checks.map((c, i) => {
+      const on = c.id === s.selF; const st = s.status[c.id];
+      return {
+        num: String(i + 1), short: c.short, rtype: c.rtype, score: c.score, on: on ? 'true' : 'false',
+        critLabel: c.critical ? 'Critical' : 'Non-critical',
+        critStyle: 'font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; ' + (c.critical ? 'background: #7a1815; color: #ffffff' : 'background: #eef0e7; color: #565c4d'),
+        cardStyle: 'width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 7px; background: #ffffff; ' + (on ? 'border: 2px solid ' + this.colors[i] + '; box-shadow: 0 1px 4px rgba(28, 33, 23, 0.12)' : 'border: 1px solid #dcded3'),
+        dotStyle: 'width: 22px; height: 22px; flex-shrink: 0; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #ffffff; background: ' + this.colors[i],
+        statusLabel: statusDefs.find((x) => x[0] === st)[1],
+        statusStyle: 'flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; ' + statusTone[st],
+        trail: ['Analysis', 'Summary', 'Reco'].map((n, k) => ({ label: n + ' · ' + trailDef[c.trail[k]][0], style: 'font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; ' + trailDef[c.trail[k]][1] })),
+        pick: () => { this.setState({ selF: c.id, threat: c.threat }); jumpF(c.threat); }
+      };
+    });
+    const si = fidx(s.selF);
+    const sel = {
+      key: selC.key, desc: selC.desc, recheck: rc.recheck[selC.id],
+      carry: co.found[selC.id].length ? 'Same wording found in the recommendation: ' + co.found[selC.id].join(', ') + '.' : 'Not found in the recommendation text.',
+      statuses: statusDefs.map((x) => ({ label: x[1], style: 'height: 30px; padding: 0 10px; font-size: 12px; font-weight: 600; border-radius: 999px; ' + (s.status[selC.id] === x[0] ? statusTone[x[0]] + '; border: 1px solid currentColor' : 'background: #ffffff; color: #565c4d; border: 1px solid #c7cabb'), pick: () => { const o = Object.assign({}, s.status); o[selC.id] = x[0]; this.setState({ status: o }); } })),
+      note: s.notes[selC.id],
+      onNote: (e) => { const o = Object.assign({}, s.notes); o[selC.id] = e.target.value; this.setState({ notes: o }); }
+    };
+    const jump = (t) => setTimeout(() => {
+      ['sum', 'reco', 'ana'].forEach((pre) => { const el = document.querySelector('[data-jump="' + pre + '-' + t + '"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+    }, 60);
+    const renderBlocks = (blocks, allMarks, pre) => blocks.map((b, bi) => {
+      const ms = allMarks[bi].slice().sort((p, q) => p.s - q.s);
+      const segs = []; let pos = 0;
+      ms.forEach((m) => { if (m.s < pos) return; if (m.s > pos) segs.push({ t: b.body.slice(pos, m.s), style: '' }); const k = fidx(m.f); const on = m.f === s.selF; segs.push({ t: b.body.slice(m.s, m.e), style: 'border-radius: 3px; padding: 1px 2px; background: ' + this.wash[k] + '; ' + (on ? 'box-shadow: inset 0 -2px 0 ' + this.colors[k] + '; font-weight: 600' : '') }); pos = m.e; });
+      if (pos < b.body.length) segs.push({ t: b.body.slice(pos), style: '' });
+      const hasSel = ms.some((m) => m.f === s.selF);
+      const onThreat = b.threat === s.threat;
+      const tags = { conclusion: 'Conclusion', emergence: 'Emergence', weeds: 'Weeds', nutrients: 'Nutrients', diseases: 'Diseases', insects: 'Insects', weather: 'Weather' };
+      return {
+        hasHeading: !!b.heading, heading: b.heading, tag: tags[b.threat] || '',
+        tagStyle: 'display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 8px; color: #8b9080',
+        style: 'width: 100%; text-align: left; padding: 8px 10px; font-size: 13.5px; line-height: 1.55; color: #1c2117; border-radius: 8px; background: #ffffff; ' + (hasSel ? 'border: 2px solid ' + this.colors[si] : (onThreat ? 'border: 1px solid #0a7a0a' : 'border: 1px solid transparent')),
+        segs: segs, jumpId: pre + '-' + (blocks.findIndex((x) => x.threat === b.threat) === bi ? b.threat : 'x' + bi),
+        pick: () => { const m = ms.find((x) => true); const t = b.threat === 'conclusion' ? (m ? 'insects' : s.threat) : b.threat; this.setState(m ? { threat: t, selF: m.f } : { threat: t }); jump(t); }
+      };
+    });
+    const sumBlocks = renderBlocks(blocks, rc.marks, 'sum');
+    const recoBlocks = renderBlocks(rblocks, co.marks, 'reco');
+    const anaMap = { emergence: 'emergence', weeds: 'weeds', diseases: 'diseases', nutrients: 'nutrients', insects: 'insects', weather: 'weather' };
+    const anaBlocks = this.analysis.split(/\n\s*\n/).map((x) => x.replace(/^\s+|\s+$/g, '')).filter(Boolean).map((txt) => {
+      const first = txt.split('\n')[0]; const w = first.split(/[\s—-]/)[0].toLowerCase(); const t = anaMap[w] || 'weather';
+      const on = t === s.threat;
+      return { head: first, body: txt.split('\n').slice(1).map((l) => l.trim()).join('\n'), jumpId: 'ana-' + t,
+        style: 'width: 100%; text-align: left; padding: 8px 10px; font-size: 12.5px; line-height: 1.5; color: #3d4235; border-radius: 8px; background: #ffffff; ' + (on ? 'border: 1px solid #0a7a0a' : 'border: 1px solid #eef0e7'),
+        pick: () => { this.setState({ threat: t }); jump(t); } };
+    });
+    const R = this.related;
+    const relatedText = 'Analysis: ' + R.anaN + ' checks, avg ' + R.anaAvg + ', failed ' + (R.analysisFails.join(', ') || 'none') + ' (analysis corrections are off) · Auto-fixed: Summary ' + (R.sumFixed.join(', ') || 'none') + ' · Recommendation ' + (R.recoFixed.join(', ') || 'none');
+    const lowerTabs = [['reco', 'Recommendations'], ['analysis', 'Analysis']].map((t) => ({ label: t[1], on: s.lower === t[0] ? 'true' : 'false', pick: () => this.setState({ lower: t[0] }), style: 'height: 30px; padding: 0 12px; font-size: 13px; font-weight: 700; border-radius: 7px; ' + (s.lower === t[0] ? 'background: #1c2117; color: #ffffff; border: 1px solid #1c2117' : 'background: #ffffff; color: #565c4d; border: 1px solid #c7cabb') }));
+    const losses = this.finalLoss.map((l) => {
+      const above = l[2] >= this.threshold; const nm = !!rc.named[l[0]];
+      const bad = (above && !nm) || (!above && nm);
+      const tag = above ? (nm ? 'above · in conclusion' : 'above · missing from conclusion') : (nm ? 'below · named in conclusion' : 'below · not named');
+      const focus = selC.rule === 'yield' && bad;
+      return { label: l[1], value: l[2].toFixed(1), tag: tag,
+        style: 'padding: 8px 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 2px; ' + (above ? 'background: #f6d7b8; color: #6b3a0c' : 'background: #f7f8f3; color: #3d4235') + (focus ? '; box-shadow: inset 0 0 0 2px ' + this.colors[si] : ''),
+        tagStyle: 'font-size: 11px; font-weight: 600; ' + (bad ? 'color: #9b1c14' : 'color: #565c4d') };
+    });
+    const topicKeys = [['emergence', 'Stand count'], ['weeds', 'Weeds'], ['nutrients', 'Nutrients'], ['diseases', 'Diseases'], ['insects', 'Insects'], ['weather', 'Weather']];
+    const topicTabs = topicKeys.map((k) => ({ label: k[1], on: s.threat === k[0] ? 'true' : 'false', style: 'height: 30px; padding: 0 12px; font-size: 12.5px; font-weight: 600; border-radius: 7px; ' + (s.threat === k[0] ? 'background: #0a7a0a; color: #ffffff; border: 1px solid #0a7a0a' : 'background: #ffffff; color: #565c4d; border: 1px solid #c7cabb'), pick: () => this.setState({ threat: k[0] }) }));
+    const passHeads = this.passes.map((p, i) => {
+      const hl = (selC.rule === 'stage') || (selC.rule === 'weedtrend' && i === this.passes.length - 1);
+      return Object.assign({}, p, { style: 'padding: 6px 8px; background: #eef0e7; border-radius: 6px' + (hl ? '; box-shadow: inset 0 0 0 2px ' + this.colors[si] : '') });
+    });
+    const topic = this.input.find((x) => x.key === s.threat);
+    const PAL = ['#256abf', '#0a5c0a', '#d98a1c', '#8e44ad', '#c0392b', '#138d8d', '#7a5c2e', '#d6589f'];
+    const ch = topic.chart && topic.chart.series && topic.chart.series.length ? topic.chart : null;
+    let chart = null;
+    let lead = 0;
+    if (ch) {
+      while (lead < 5 && ch.series.every((x) => x.v[lead] === null)) lead++;
+      const kc = 6 - lead;
+      const IDX = [0, 1, 2, 3, 4, 5].slice(lead);
+      const ser = ch.series.map((x, k) => {
+        const nz = x.v.map((y, i) => (y !== null && y > 0) ? i : -1).filter((i) => i >= 0);
+        const a = nz.length ? nz[0] : 9, b = nz.length ? nz[nz.length - 1] : -1;
+        return { name: x.name, color: PAL[k % PAL.length], raw: x.v, v: x.v.map((y, i) => (i < a || i > b) ? null : y) };
+      });
+      const mx = Math.max(...ser.map((x) => Math.max(...x.raw.filter((y) => y !== null), 0)));
+      const nzAll = [].concat(...ser.map((x) => x.raw.filter((y) => y !== null && y > 0)));
+      const hiE = Math.ceil(Math.log10(Math.max(mx, 1e-6)));
+      let loE = Math.floor(Math.log10(Math.min(...nzAll, mx || 1)));
+      if (hiE - loE < 1) loE = hiE - 1;
+      const maxLabels = Math.max(...[0, 1, 2, 3, 4, 5].map((i) => ser.filter((x) => x.v[i] !== null && x.v[i] > 0).length));
+      const H = Math.max(260, 36 + 20 * ser.length + 24, 30 + 19 * maxLabels);
+      const T = 12, B = 16;
+      const Z = 18;
+      const Y = (y) => y <= 0 ? H - B : T + (1 - (Math.log10(y) - loE) / (hiE - loE)) * (H - T - B - Z);
+      const X = (i) => (i - lead + 0.5) * (600 / kc);
+      const tickVals = [0]; for (let e = loE; e <= hiE; e++) tickVals.push(Number(Math.pow(10, e).toPrecision(1)));
+      const segs = (v) => { let dd = ''; let pen = false; v.forEach((y, i) => { if (y === null) { pen = false; return; } dd += (pen ? ' L ' : ' M ') + X(i).toFixed(1) + ' ' + Y(y).toFixed(1); pen = true; }); return dd.trim(); };
+      const fmtv = (y) => y + '%';
+      const cols = IDX.map((i) => {
+        const dots = ser.filter((x) => x.v[i] !== null).map((x) => { const y = Y(x.v[i]); const zero = x.v[i] === 0; const r0 = zero ? 3 : 4; return { style: 'position: absolute; left: calc(50% - ' + r0 + 'px); top: ' + (y - r0).toFixed(1) + 'px; width: ' + (2 * r0) + 'px; height: ' + (2 * r0) + 'px; box-sizing: border-box; border-radius: 50%; z-index: 1; background: ' + (zero ? '#ffffff' : x.color) + '; border: 2px solid ' + x.color }; });
+        const items = ser.filter((x) => x.v[i] !== null && x.v[i] > 0).map((x) => ({ x: x, want: Y(x.v[i]) - 9 })).sort((p, q) => p.want - q.want);
+        let prev = -100; items.forEach((it) => { it.top = Math.max(it.want, prev + 19, 2); prev = it.top; });
+        let lim = H - 20; for (let k = items.length - 1; k >= 0; k--) { items[k].top = Math.min(items[k].top, lim); lim = items[k].top - 19; }
+        const labels = items.map((it) => ({ t: fmtv(it.x.v[i]), style: 'position: absolute; left: calc(50% + 10px); top: ' + it.top.toFixed(1) + 'px; height: 17px; line-height: 15px; box-sizing: border-box; padding: 0 5px; font-size: 11.5px; font-weight: 600; font-family: \'IBM Plex Mono\', monospace; color: #1c2117; background: #ffffff; border: 1px solid ' + it.x.color + '; border-left-width: 4px; border-radius: 4px; white-space: nowrap; z-index: 2' }));
+        return { dots: dots, labels: labels };
+      });
+      chart = {
+        title: ch.title, note: 'Square-root scale so small values stay readable. Each line runs from first to last detection; numbers sit on top of the lines.',
+        viewBox: '0 0 600 ' + H,
+        boxStyle: 'grid-column: span ' + kc + '; position: relative; height: ' + H + 'px; background: #fbfbf8; border: 1px solid #e4e6dc; border-radius: 8px; box-sizing: border-box',
+        grid: tickVals.map((t) => 'M 0 ' + Y(t).toFixed(1) + ' L 600 ' + Y(t).toFixed(1)).join(' ') + ' ' + IDX.map((i) => 'M ' + X(i) + ' ' + T + ' L ' + X(i) + ' ' + (H - B)).join(' '),
+        ticks: tickVals.map((t) => ({ t: t + '%', style: 'position: absolute; left: 4px; top: ' + (Y(t) - 7).toFixed(1) + 'px; font-size: 10px; line-height: 12px; color: #8b9080; background: #fbfbf8; padding: 0 2px' })),
+        legend: ser.map((x) => { const pk = Math.max(...x.raw.filter((y) => y !== null)); const pi = x.raw.indexOf(pk); return { name: x.name, swatch: 'width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: ' + x.color, peak: 'peak ' + pk + '% · P' + (pi + 1) }; }),
+        cols: cols,
+        colsStyle: 'position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(' + kc + ', minmax(0, 1fr))',
+        gapCells: [0, 1, 2, 3, 4, 5].slice(0, lead).map(() => ({ t: 'no data', style: 'display: flex; align-items: center; justify-content: center; background: #fbfbf8; border-radius: 8px; font-size: 10.5px; color: #a3a796; writing-mode: vertical-rl; transform: rotate(180deg)' }))
+      };
+      for (let k = 0; k < 8; k++) { chart['l' + k] = ser[k] ? segs(ser[k].v) : ''; chart['s' + k] = ser[k] ? 'fill: none; stroke: ' + ser[k].color + '; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke' : 'display: none'; }
+    }
+    const TINT = ['#e4ecf8', '#e0efe0', '#fbecd8', '#efe4f5', '#f7e2df', '#ddf0f0', '#efe8dc', '#f9e4ef'];
+    const tintOf = (r) => (ch && r.sw !== undefined) ? TINT[r.sw % TINT.length] : null;
+    const swOf = (r) => (ch && r.sw !== undefined) ? PAL[r.sw % PAL.length] : null;
+    const matrix = topic.rows.map((r) => {
+      const isLoss = r.label.indexOf('Yield loss') === 0;
+      const isText = /agent|recommendation|products/.test(r.label);
+      return {
+        label: r.label,
+        swatch: swOf(r) ? 'display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; background: ' + swOf(r) : 'display: none',
+        labelStyle: (tintOf(r) ? 'background: ' + tintOf(r) + '; border-radius: 6px; ' : '') + 'padding: 6px 8px; font-size: 12px; font-weight: 600; color: #3d4235; font-family: ' + (/[a-z]_[a-z]/.test(r.label) ? "'IBM Plex Mono', monospace" : "'IBM Plex Sans', sans-serif") + '; ' + (isLoss ? 'background: #fbf6ec; border-radius: 6px' : ''),
+        cells: r.cells.map((c) => {
+          const empty = c === '–' || c === 'none' || c === '0' || c.indexOf('Agentic correlation analysis was not performed') === 0;
+          const hot = isLoss && parseFloat(c) >= 3;
+          return { t: c, style: 'padding: 6px 8px; border-radius: 6px; line-height: 1.35; font-size: ' + (isText ? '11.5px' : '12.5px') + '; ' + (hot ? 'background: #f6d7b8; color: #6b3a0c; font-weight: 700' : (empty ? 'background: #fbfbf8; color: #a3a796' : (isLoss ? 'background: #fbf6ec' : (tintOf(r) ? 'background: ' + tintOf(r) + '; color: #1c2117' : 'background: #f7f8f3')))) };
+        })
+      };
+    });
+    const gridStyle = 'display: grid; grid-template-columns: 150px ' + '56px '.repeat(lead) + 'repeat(' + (6 - lead) + ', minmax(0, 1fr)); gap: 4px';
+
+    if (selC.rule === 'weedtrend' && s.threat === 'weeds') {
+      matrix.forEach((r) => { if (r.label === 'weeds_pressure') { r.labelStyle += '; box-shadow: inset 0 0 0 2px ' + this.colors[si] + '; border-radius: 6px'; r.cells[r.cells.length - 1].style += '; box-shadow: inset 0 0 0 2px ' + this.colors[si]; } });
+    }
+    if (selC.rule === 'stage' && s.threat === 'emergence') {
+      matrix.forEach((r) => { if (r.label === 'Phenological stage') { r.labelStyle += '; box-shadow: inset 0 0 0 2px ' + this.colors[si] + '; border-radius: 6px'; } });
+    }
+    const flagTone = { good: 'background: #e3f2df; color: #075c07', risk: 'background: #f6d7b8; color: #6b3a0c', part: 'background: #eef0e7; color: #565c4d', none: 'background: #ffffff; color: #565c4d; border: 1px solid #dcded3' };
+    const flags = this.flags.map((f) => ({ name: f.name, condition: f.condition, type: f.type, result: f.result, evidence: f.evidence, sum: f.sum, style: 'font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; ' + flagTone[f.tone] }));
+    const changed = s.draft !== this.summary;
+    const changedR = s.draftR !== this.reco;
+    const openCount = Object.values(s.status).filter((v) => v === 'open').length;
+    const resolutionRows = this.checks.map((c, i) => ({ num: String(i + 1), key: c.short, label: statusDefs.find((x) => x[0] === s.status[c.id])[1], style: 'font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; ' + statusTone[s.status[c.id]] }));
+    return {
+      gridStyle, findings, sel, sumBlocks, recoBlocks, relatedText, lowerTabs,
+      sumMeta: 'Summary · ' + R.sumN + ' checks · avg ' + R.sumAvg + ' · 3 failed (1 critical)', recoMeta: R.recoN + ' checks passed · avg ' + R.recoAvg + ' · ' + R.recoFixed.length + ' auto-fixed', losses, topicTabs, passHeads, matrix, flags, resolutionRows,
+      hasChart: !!chart, chart: chart || { legend: [], ticks: [], cols: [] },
+      isWeather: s.threat === 'weather', notWeather: s.threat !== 'weather', showSoy: !!s.showSoy, soy: this.soy, soyLabel: s.showSoy ? 'Hide soybean thresholds' : 'Show soybean thresholds', toggleSoy: () => this.setState({ showSoy: !s.showSoy }),
+      showReco: s.lower === 'reco', showAnalysis: s.lower === 'analysis', analysis: this.analysis, anaBlocks,
+      viewMode: !s.edit, editMode: s.edit, editLabel: s.edit ? 'Done editing' : 'Edit text',
+      editBtnStyle: 'height: 30px; padding: 0 12px; font-size: 12px; font-weight: 700; border-radius: 7px; ' + (s.edit ? 'background: #0a7a0a; color: #ffffff; border: 1px solid #0a7a0a' : 'background: #ffffff; color: #0a7a0a; border: 1px solid #0a7a0a'),
+      toggleEdit: () => this.setState({ edit: !s.edit }),
+      viewModeR: !s.editR, editModeR: s.editR, editLabelR: s.editR ? 'Done editing' : 'Edit text',
+      editBtnStyleR: 'height: 30px; padding: 0 12px; font-size: 12px; font-weight: 700; border-radius: 7px; ' + (s.editR ? 'background: #0a7a0a; color: #ffffff; border: 1px solid #0a7a0a' : 'background: #ffffff; color: #0a7a0a; border: 1px solid #0a7a0a'),
+      toggleEditR: () => this.setState({ editR: !s.editR }),
+      draftR: s.draftR, onDraftR: (e) => this.setState({ draftR: e.target.value }), resetTextR: () => this.setState({ draftR: this.reco, editR: false }),
+      changedLabelR: changedR ? 'Edited' : 'Unchanged',
+      changedStyleR: 'font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; ' + (changedR ? 'background: #e3f2df; color: #075c07' : 'background: #eef0e7; color: #8b9080'),
+      draft: s.draft, onDraft: (e) => this.setState({ draft: e.target.value }), resetText: () => this.setState({ draft: this.summary, edit: false }),
+      changedLabel: changed ? 'Edited' : 'Unchanged',
+      changedStyle: 'font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; ' + (changed ? 'background: #e3f2df; color: #075c07' : 'background: #eef0e7; color: #8b9080'),
+      resolvedLabel: (3 - openCount) + ' of 3 resolved',
+      overrideLabel: s.applied ? 'Submitted' : 'Not submitted',
+      showSubmit: s.showSubmit, notDone: !s.done, isDone: s.done,
+      warnText: openCount ? openCount + ' finding(s) still open. Resolve each one (fixed, judge false claim, or question for team) before submitting.' : 'All findings resolved.',
+      warnStyle: 'padding: 8px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; ' + (openCount ? 'background: #fbe3e0; color: #7a1815' : 'background: #e3f2df; color: #075c07'),
+      changeSummary: 'Summary ' + (changed ? 'edited' : 'unchanged') + ' · Recommendation ' + (changedR ? 'edited' : 'unchanged'),
+      openSubmit: () => this.setState({ showSubmit: true, done: false }),
+      closeSubmit: () => this.setState({ showSubmit: false, done: false }),
+      dryRun: s.dryRun, toggleDry: () => this.setState({ dryRun: !s.dryRun }),
+      submitLabel: s.dryRun ? 'Run dry run' : 'Submit to Argo',
+      doSubmit: () => { if (openCount) return; this.setState({ done: true, lastDry: s.dryRun, applied: s.dryRun ? s.applied : 1 }); },
+      doneTitle: s.lastDry ? 'Dry run complete' : 'Correction submitted',
+      doneBody: s.lastDry ? 'Nothing was sent. The corrected summary and recommendation and each finding\'s resolution and note are logged as a dry run.' : 'The override workflow is running; the tool reads the status back by workflow name. (Prototype: nothing was actually sent.)'
+    };
+  }
+}
+
+</script>
+</body>
+</html>

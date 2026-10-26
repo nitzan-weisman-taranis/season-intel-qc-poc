@@ -1,0 +1,669 @@
+season-reco-analysis-subscriber · courtroom_season
+Season Intel judge checks in production
+Every criterion the season judge scores on each production message. All of them are procedural (rule-based, no model call). Each scores 0 or 10, and the field's judge score is their weighted average.
+
+Source origin/master @ f159449 (2026-10-06)
+Criteria set 2026-09-14
+Extracted 2026-10-07
+191
+checks live in production
+66
+analysis checks
+82
+summary checks
+43
+recommendation checks
+63
+auto-corrected on failure
+1
+critical (blocks the result)
+How production runs them (flow/season_reco_model.py)
+Analysis checks run right after stage 1. Scores are persisted, but analysis corrections are switched off (APPLY_ANALYSIS_CORRECTIONS = False).
+Summary and Recommendation checks run after stages 2 and 3. A failed check marked Auto-fix gets a procedural rewrite, which is kept only if the check passes on re-judging.
+A Critical check scoring 0 flags the whole evaluation as a critical failure. Consumers hide the result and skip downstream events.
+LLM-as-judge checks are off in production (enable_llm_checks=False). They and the deactivated criteria are listed at the bottom.
+Search names and descriptions (e.g. rainfall, weed, yield)
+All
+Analysis
+Summary
+Recommendation
+Auto-fix only
+191 of 191 checks
+#	Check	Description
+1	SEASON_ANALYSIS_PRIORITY_FORMAT
+Analysis
+Each detected category header includes a valid Season Priority label (High/Moderate/Low/No Threat)
+2	SEASON_ANALYSIS_THREAT_COVERAGE
+Analysis
+Every threat type present in season_data (EMERGENCE:, WEEDS:, etc.) has a corresponding section in the analysis
+3	SEASON_ANALYSIS_NO_FABRICATED_CATEGORIES
+Analysis
+Analysis contains no threat categories that are absent from the season_data input
+4	SEASON_ANALYSIS_NO_FABRICATED_THREATS
+Analysis
+Any specific named threat (species, disease, deficiency) mentioned in the analysis must appear in the season_data
+5	SEASON_ANALYSIS_NO_MARKDOWN
+Analysis
+Analysis contains no markdown formatting: no # headers, **bold**, or * bullets (dashes are required and allowed)
+6	SEASON_ANALYSIS_NO_COMPASS_DIRECTIONS
+Analysis
+Analysis does not use compass directions + location nouns (e.g. "northwestern corner", "NE section") — use hotspots/widespread/pockets instead
+7	SEASON_ANALYSIS_NO_MANAGED_LABELS
+Analysis
+Analysis does not use bare "Managed" or "Unmanaged" as standalone labels — hedged forms like "likely managed," "consistent with management," "appears unmanaged," or "likely unresolved" are acceptable and expected. Scenario: lines (which copy names from SCENARIO CLASSIFICATIONS) are exempt.
+8	SEASON_ANALYSIS_NO_FAVORABLE_CONDITIONS
+Analysis
+Analysis does not contain the phrase "favorable conditions" — uses "conditions that lent themselves to" instead
+9	SEASON_ANALYSIS_NO_YIELD_FIGURES
+Analysis
+Analysis contains no bu/ac or bu/acre yield figures — yield impact must be qualitative only
+10	SEASON_ANALYSIS_EMERGENCE_NO_RECOVERY
+Analysis
+Emergence section never uses "recovered" or "recovery" — only the final/latest early-season reading is reported
+11	SEASON_ANALYSIS_SCENARIO_FIELDS_PRESENT
+Analysis
+Each detected threat section contains a "Scenario:" field copied from SCENARIO CLASSIFICATIONS
+12	SEASON_ANALYSIS_WEATHER_GROUNDED
+Analysis
+Weather Context section appears only when WEATHER DATA block is present in the input; fabricating it without input data scores 0
+13	SEASON_ANALYSIS_VPD_GROUNDED
+Analysis
+VPD/atmospheric demand language in the analysis must be grounded in VPD stress flags from the weather data; no VPD cited without data, no data flags silently dropped
+14	SEASON_ANALYSIS_EMERGENCE_PHENOLOGICAL_STATE
+Analysis
+Phenological state rules: (1) uniformity at the latest early-season reading is NOT a simple distinct-stage count — 1 stage is uniform; 2 adjacent stages (per the corn stage order) are uniform regardless of split; 2 non-adjacent stages or 3 stages are uniform only if the dominant stage reaches 75%; 4+ stages are never uniform; the model should copy the deterministic "(Phenological stage uniformity: ...)" label appended to the mission data rather than recompute this; (2) if not uniform, the emergence section must flag it explicitly; (3) if phenological state data is absent from the input, the emergence section must NOT mention it at all — "cannot be assessed," "no data," or any similar phrase scores 0
+15	SEASON_ANALYSIS_NO_VPD_DISEASE_NARRATIVE
+Analysis
+Analysis must not cite VPD as a driver or contributor to disease pressure anywhere in the output — VPD may appear in the Weather Context section for atmospheric demand and drought-flag computation, but must never be referenced as an explanation for disease spread, infection risk, or disease development in the disease section or any other narrative output
+16	SEASON_ANALYSIS_DISEASE_PER_PATHOGEN_TRAJECTORY
+Analysis
+Every detected impact disease must be described with its own trajectory in the analysis — when multiple impact diseases are detected, each must appear separately in the description; they may be combined in one sentence only when their trajectories are identical. If an impact disease was detected in earlier missions but absent at the final mission, the analysis must explicitly state this (e.g., "no longer detected at Mission 6")
+17	SEASON_ANALYSIS_WEED_SPECIES_NAMED
+Analysis
+When weed species names are present in the season data, the analysis must list them by their actual name in the Species field — using generic terms like "broadleaf weeds" or "grass weeds" instead of available species names scores 0. Species names not present in the data must not be invented.
+18	SEASON_ANALYSIS_EMERGENCE_CV_ABSENT_NO_UNIFORMITY
+Analysis
+When CV data is absent from the season input, the emergence section must not mention CV, uniformity, or spacing — must not write "cannot be assessed," "uniformity was not assessed," or any similar phrase; omit the Uniformity field entirely
+19	SEASON_ANALYSIS_NUTRIENT_SN_STAGE_LEAD
+Analysis
+When S or N deficiency was first detected before a significant rainfall event, the nutrient description must lead with the growth stage at first detection and frame rainfall as an intensifying factor — not frame the deficiency as having "appeared following heavy rainfall." Reserve "appeared following heavy rainfall" only when deficiency first appeared after the rain.
+20	SEASON_ANALYSIS_NUTRIENT_SN_STAGE_LEAD_WEATHER_CONTEXT
+Analysis
+Same stage-lead rule as SEASON_ANALYSIS_NUTRIENT_SN_STAGE_LEAD, applied to the Weather Context section (the Nutrients-section check never sees Weather Context, and Weather Context is composed independently and can make its own S/N rain-causal claim via the "Nutrient deficiency driver" bullet): a rain-causal claim there must not frame a deficiency already present at an earlier mission as having "appeared following" the rain — use "intensified following" instead — and any cited rain-window date range must match the window immediately preceding the deficiency's actual first detection.
+21	SEASON_ANALYSIS_NUTRIENT_LEACHING_SN_ONLY
+Analysis
+Rain/leaching causal framing for a nutrient deficiency ("appeared/intensified following heavy rainfall," "leaching") is reserved for Sulfur or Nitrogen — Potassium, Phosphorus, and Magnesium are structural deficiencies (see the STRUCTURAL DEFICIENCY TRIGGER path) and must never be described as rain/leaching-driven anywhere in the analysis — including the Weather Context section, where this most often leaks in — regardless of Status.
+22	SEASON_ANALYSIS_EMERGENCE_GDD_QUALIFIER
+Analysis
+When GDD at VE notably exceeds the typical corn VE range of 100–120 GDD (base 50°F), the emergence description must briefly qualify the GDD value as later than typical — e.g., "at 161 GDD, later than typical for VE." Do not cite a delayed GDD value without context.
+23	SEASON_ANALYSIS_INSECT_CRITICAL_WINDOW_2
+Analysis
+v2 of SEASON_ANALYSIS_INSECT_CRITICAL_WINDOW, run side by side for comparison before v1 is retired (added 2026-08-14 after v1 was found to be almost entirely false positives against a live SA batch). Same rule, but: aggregates ALL per-mission "Critical window:" occurrences for an insect (an insect within its window at least once may be characterized as significant even if other missions caught it outside); scopes the narrative search to the Insects category's own Description: prose, not the whole analysis text; and only flags a significant/negligible mismatch when it can be attributed to a clause naming this insect alone, skipping mentions entangled with another insect or category rather than guessing.
+24	SEASON_ANALYSIS_EMERGENCE_RAINFALL_THRESHOLD
+Analysis
+When rainfall is cited as a cause of delayed emergence, it must meet the excess precipitation threshold (≥2 in within 48 hrs or ≥3 in within 72 hrs of planting). A single-day "heavy precip" data flag (1–2 in on one day) does NOT meet this threshold — only cite rain as an emergence stressor if the 48-hr window total is ≥2 in or the 72-hr window total is ≥3 in; if neither is met, citing the rainfall figure at all scores 0. A cumulative planting-window total (e.g., "3.1 in of rain in the planting window") does NOT qualify. Any total spanning more than 72 hours (e.g., "6.1 in over 24 days after planting") is also a cumulative total and scores 0 regardless of how the timeframe is described. Neither must be cited as an emergence stressor. If rainfall was adequate in total but arrived after 7 days from planting (Delayed rainfall), the analysis must use the Delayed rainfall matrix row framing — not cite a specific rainfall amount as a stressor.
+25	SEASON_ANALYSIS_EMERGENCE_MULTIPASS_WEATHER
+Analysis
+The single-flight rule is universal — there is no multi-flight exception for any tier (optimal, sub-optimal, or poor). The analysis emergence section must never cite a second mission's stand-count % or GDD value alongside the final one, and must never use trajectory language ("advancing to", "advanced to", "reaching", "rising to") — report the latest reading only, regardless of tier.
+26	SEASON_ANALYSIS_DISEASE_SPELLING
+Analysis
+Analysis must always spell Gray Leaf Spot with an "a" — "grey leaf spot" scores 0
+27	SEASON_ANALYSIS_RUST_GENERIC_NAMING
+Analysis
+Detection cannot distinguish rust species — analysis must say plain "Rust", never "Common Rust" or "Southern Rust"; naming a specific species scores 0
+28	SEASON_ANALYSIS_INSECT_LOW_IMPACT_FORMAT
+Analysis
+Low-impact insects must be listed only under a "Low-impact detections" field formatted as "{{insect}}: {{peak %}} at {{stage}}" per line — no trajectory or yield language
+29	SEASON_ANALYSIS_SOY_DEFOLIATION_THRESHOLD
+Analysis
+Soybean defoliation must be characterized using the prompt thresholds: <20% negligible/below treatment threshold, >=20% moderate/at treatment threshold, >=30% significant/above threshold canopy loss
+30	SEASON_ANALYSIS_NATURAL_DECLINE_FRAMING
+Analysis
+For natural-decline species (Japanese beetle, fall armyworm), late-season declines must not be attributed causally to management ("managed down", "due to management") — "pressure subsided by [stage] — consistent with seasonal flight window" is preferred; hedged managed language ("likely managed", "appeared managed") is accepted
+31	SEASON_ANALYSIS_NO_MERGED_STAGE
+Analysis
+A growth stage must be cited as the mission's single Representative (dominant) stage — never two stage buckets joined by a slash (e.g. "VT-R1/R2-R4", "V3-V4/V4-V5").
+32	SEASON_ANALYSIS_YIELD_IMPACT_MATERIALITY_CONSISTENCY
+Analysis
+Every threat category's "Yield impact: yes/no" call must match its own "Materiality:" line (both sourced from the same CATEGORY STATUS ground truth) — a Negligible/None-materiality category (weeds, diseases, nutrients, or insects) can never carry "Yield impact: yes", even when the threat was active during a sensitive growth-stage window.
+33	SEASON_ANALYSIS_SINGLE_DETECTION_NO_ESCALATION
+Analysis
+A category scenario-classified as "Single Detection" has exactly one data point — "escalation"/"escalating" language must never be used for it, since escalation implies a second, higher observation that a single detection by definition does not have.
+34	SEASON_ANALYSIS_PRECIPITATION_EVENT_GROUNDED
+Analysis
+A rainfall amount attributed to a single named day must match a "heavy precip" stress flag in the weather data. season_data publishes per-window TOTALS and, only where a day crosses the threshold, a dated heavy-precip flag — it never gives a daily breakdown, so any other single-day amount describes a day the record does not. Window totals are untouched.
+35	SEASON_ANALYSIS_PRECIP_WINDOW_ATTRIBUTION
+Analysis
+A precipitation total cited for a specific date range (e.g. "2.2 in of rain between Jun 28-Jul 15") must be that window's own total in season_data -- not another window's figure reused against the wrong dates. Distinct from SEASON_ANALYSIS_PRECIPITATION_EVENT_GROUNDED, which only grades single-day breakdowns, and from the NUTRIENT_SN_STAGE_LEAD family, which validates the date range but not the amount and only for nutrient-causal sentences.
+36	SEASON_ANALYSIS_PRECIP_DOMINANT_EVENT_ATTRIBUTION
+Analysis
+When a weather window's total is almost entirely one heavy-precip-flagged day (that day alone clears the ~2 in heavy-precip materiality threshold, and the window's remaining precipitation does not), the analysis must cite that day as the event -- not the multi-day window range, which understates how concentrated the rainfall actually was and buries the actual point of interest.
+37	SEASON_ANALYSIS_WEED_SPECIES_MISSION_GROUNDED
+Analysis
+A weed species named at one specific mission must be a species that mission's WEEDS block actually recorded. The weed engine grades a single entity (overall pressure) and never per-species, and NO_FABRICATED_THREATS only asks whether a species appears somewhere in the season — so a real species pinned to the wrong mission is checked by nothing.
+38	SEASON_ANALYSIS_FIRST_DETECTION_MISSION_GROUNDED
+Analysis
+A category section's "First detected:" field must name a mission whose block actually records that category. The stage-attribution engine faults a mis-staged first detection only through a clause naming an entity it knows; this field names no entity, so a section whose threat was removed as fabricated could keep a first detection pointing at a mission with no data for the category at all.
+39	SEASON_ANALYSIS_SPATIAL_CLAIMS_GROUNDED
+Analysis
+Spatial claims in the analysis must not contradict season_data's own spatial statements: the emergence section must not place low/high stand-count pockets or regions in a field whose EMERGENCE block reports "No distinctive low or high stand count regions detected", and a disease description must not deny spatial concentration when the record measures one. Grades contradiction only — silent where the data makes no spatial statement.
+40	SEASON_ANALYSIS_FIRST_PERCENT_DETECTIONS_PHRASE
+Analysis
+For disease, insect, and nutrient detections, the first % metric per threat category must be followed by "detections in the field" in the analysis text — the phrase must not repeat for later % values of the same threat. Mirrors the summary-side check; previously only enforced on the summary, so the analysis could cite the same figure without the phrase.
+41	SEASON_ANALYSIS_TREND_WORD_ACCURACY
+Analysis
+A sentence must not describe a threat with a persistence/plateau verb ("remained", "persisted", "still present", "held", "continued") when its own cited percentages show a real decrease and no decreasing-family word ("decreasing", "consistent with management", "likely managed", "reduced") is also present in that sentence.
+42	SEASON_ANALYSIS_WEED_TREND_GROUNDED
+Analysis
+A weed sentence must not use resolution/control language ("controlled", "resolved", "no longer a factor", "effectively controlled") when the record's actual final-mission Pressure label is still moderate or higher, nor claim a decrease when the final mission's label never actually dropped below the season's peak. Grounded directly in season_data's per-mission Pressure labels (weed severity has no percentage to cite), not in whatever the sentence itself happens to state — closes a gap TREND_WORD_ACCURACY cannot see, since that check only catches a persistence verb contradicted by a percentage cited in the SAME sentence, never a resolution/decrease claim checked against season_data itself.
+43	SEASON_ANALYSIS_NUTRIENT_TREND_GROUNDED
+Analysis
+A nutrient sentence must not claim an element is resolved/no-longer-detected when season_data's final mission still reports a real (>0%) detection for that same element. Per-element, not per-category — a category-level Unresolved status can coexist with one specific nutrient genuinely having resolved.
+44	SEASON_ANALYSIS_DISEASE_TREND_GROUNDED
+Analysis
+A disease sentence must not claim resolution ("gone by X", "no longer detected") for a pathogen still in-field at the record's true final mission, regardless of which mission the sentence itself cites as the resolution point. Per-pathogen, reusing the same processors/disease_detections.py mission parser DISEASE_PCT_MISATTRIBUTION already trusts.
+45	SEASON_ANALYSIS_STAGE_CITED_NOT_RECORDED
+Analysis
+A growth-stage token cited anywhere in the analysis must match some mission's actual (Representative, or clearly-dominant) stage reading in season_data -- never a stage no mission recorded. Dominant pattern (c) from the original annotator review: a fabricated stage citation, distinct from the trend-language checks above.
+46	SEASON_DATA_REPRESENTATIVE_STAGE_VALID
+Analysis
+Every "Representative stage: X" annotation in season_data itself must be one of the crop's known growth-stage buckets (CORN_PHENOLOGICAL_STAGE_ORDER / SOY_PHENOLOGICAL_STAGE_ORDER in constants/incidents.py) -- a GT data-quality check on the source, not on any generated section. Grouped with the analysis criteria purely so it runs exactly once per record; it does not read season_analysis.
+47	SEASON_DATA_INSECT_NO_THREAT_REQUIRES_NO_DETECTION
+Analysis
+CATEGORY STATUS must not read "Insects: Status=No Threat" when season_data records any insect detection above 0%. The requirements doc's Priority Rubric defines No Threat as "Nothing detected -- omit section entirely", so a measured detection contradicts the label. A directive-vs-source check on the pipeline's own input (like SEASON_DATA_REPRESENTATIVE_STAGE_VALID), not on generated text: field 1312426 emitted Status=No Threat over chewing damage at 5.6%/9.5% and grasshopper at 1.0%, and the model correctly copied it as "no insect feeding pressure was detected".
+48	SEASON_ANALYSIS_NUTRIENT_STAGE_ATTRIBUTION
+Analysis
+A nutrient claim attributed to a specific stage must match that mission's own NUTRIENTS data -- not a stage whose mission reports no nutrient activity at all ("attributes activity to V4-V5; that mission reports none"), and not a different element than the one the mission actually lists ("names potassium at R2-R4; that mission lists other nutrients only").
+49	SEASON_ANALYSIS_DISEASE_STAGE_ATTRIBUTION
+Analysis
+A disease claimed in-field at a specific stage must match that mission's own DISEASES data -- not a stage with no disease activity at all, and not a disease that was only regional (or absent) there while a different one was actually in-field ("places Holcus Leaf Spot at V5-V12; not detected in-field there").
+50	SEASON_ANALYSIS_DISEASE_RESOLUTION_STAGE
+Analysis
+C1-ext-b: a claim that a disease was no longer detected must be dated -- by a growth-stage reference, or by the fallback the requirements doc itself permits ("at final assessment"). The reviewer-requested literal template "no longer detected by R2-R4" is deliberately NOT enforced: GROUNDING_AUDIT.md found no such template in the doc. A missing resolution statement is not flagged here -- that belongs to SEASON_*_DISEASE_PER_PATHOGEN_TRAJECTORY.
+51	SEASON_ANALYSIS_CATEGORY_ABSENCE_GROUNDED
+Analysis
+C1-ext-c: a blanket claim that a whole threat category had no detections across any/all missions must not be contradicted by any mission block. Requires a universal scope quantifier; late-season / early-season wording narrows the mission window checked.
+52	SEASON_ANALYSIS_WEED_CONTROL_STAGE
+Analysis
+C1-ext-a: a weed control-achieved claim ("controlled by X", "declined to mild by X") must name a stage whose mission was actually at or below the controlled (mild/none) Pressure label, and pressure must not exceed that level again afterwards. Scoped to the banned-phrasing rule in the doc; the stronger reviewer "must name the EARLIEST controlled mission" reading is deliberately NOT implemented -- it fired on 58/412 GT fields, almost all correct prose, and has no doc basis.
+53	SEASON_ANALYSIS_WEED_STAGE_ATTRIBUTION
+Analysis
+A weed-pressure severity, peak or first-detection claim tied to a growth stage must match the Pressure label the mission at that stage actually recorded. Per the requirements doc SS Content-Weeds the engine validates OVERALL pressure, not per-species trajectories (which the doc forbids the output from containing at all).
+54	SEASON_ANALYSIS_TREND_VERB_GROUNDED
+Analysis
+A trajectory verb must agree with the values either side of it, whether those are severity labels or percentages. "Weed pressure was moderate at V0-VE, escalated to moderate at V1-V2" asserts a rise between two equal levels; a "declined to high" after "mild" asserts a fall that is a rise; and "first detected at Mission 4 at 79.0% detections, increased to 47.4% at Mission 5" asserts a rise the two readings refute. Judged from the text alone — the value the verb moves FROM is the nearest one before it (in the same sentence for a label, the same clause for a reading, since one sentence routinely carries two entities' percentages) — so it is independent of whether the values themselves match the missions (SEASON_*_TREND_GROUNDED) and of whether the missions run forwards (SEASON_ANALYSIS_TREND_CHRONOLOGICAL).
+55	SEASON_ANALYSIS_TREND_CHRONOLOGICAL
+Analysis
+Within one category Description sentence, the missions cited must run forward through the season — a trend may rise and fall, but it may not double back in time (e.g. "escalated to high at Mission 4 (V5-V6), then declined to mild at Missions 3 (V3-V4), 5 (VT-R1), and 6 (R2-R4)"). Graded on the citation sites the stage-attribution engine recognises, so reference windows and backward references ("no species detected after Mission 4") are not trend points.
+56	SEASON_ANALYSIS_INSECT_STAGE_ATTRIBUTION_2
+Analysis
+v2 of SEASON_ANALYSIS_INSECT_STAGE_ATTRIBUTION, run side by side for comparison before v1 is retired (added 2026-08-15 after v1 was found to be 7/10 false positives on a live SA batch). Same rule, but: matches "detected" + stage token within the same clause only, not anywhere later in the sentence (compound sentences naming multiple insects were letting one insect's bare "detected" borrow a different, later insect's own stage citation); skips any clause with a negated "detected" ("not detected", "went undetected") rather than reading it as a positive claim; and resolves insect mentions through an alias map so a narrative eliding season_data's generic suffix ("stink bug" for "stink bug damage") still resolves correctly instead of falling back to an unrelated nearby insect name. A claim that cites an accurate 0%/absent value at one endpoint of a season-long range (e.g. "ranging from 0.0% at V1-V2 to 0.7% at R2-R4") is still flagged -- that framing is what this check exists to catch, not a matching bug.
+57	SEASON_ANALYSIS_NUTRIENT_RAIN_MAGNITUDE_THRESHOLD
+Analysis
+A nitrogen/sulfur deficiency must not be attributed to a rain event below the ~2 in heavy-precip materiality threshold used elsewhere in this record's weather data -- too small to plausibly drive leaching.
+58	SEASON_ANALYSIS_INSECT_PEAK_CITED
+Analysis
+A high-impact insect the analysis DESCRIBES must cite the peak reading season_data holds for it. analysis.py asks for a trajectory "across all late-season flights", a "full trajectory section" for high-impact species, and an explicit statement of "whether peak detections fell within the critical window" — a narrative built on one non-peak reading cannot do the last of those and under-reports the season. Field 1015071 records stink bug at 7.5% (M2) and 1.7% (M3) and describes only the 1.7%, contradicting its own "First detected: Mission 2" field and carrying the loss into the summary. Low-impact species are exempt (they get a Low-impact detections line, graded by SEASON_ANALYSIS_INSECT_LOW_IMPACT_FORMAT), as is chewing damage, which the Insect Stage-Impact Reference treats as supporting evidence only. An insect the section never names is SEASON_ANALYSIS_INSECT_ENTITY_COVERAGE's business, not this one's. Deliberately NOT critical, against DECISIONS.md #1: 33 of 161 records across inference_parity and the debug fifteen omit a peak this way, and hiding one result in five over an under-reported percentage is a worse trade than shipping it — the failure is incompleteness, not a false claim.
+59	SEASON_ANALYSIS_INSECT_ENTITY_COVERAGE
+Analysis
+Every insect with a real detection in season_data must be described somewhere in the analysis Insects section. Naming it in the bare "Type:" list is NOT coverage — that field is an enumeration, and a species listed there and described nowhere is exactly the omission this grades. A supporting-only damage type (Chewing Damage, Grasshopper) is covered by the grouped low-impact clause; it does not need a trajectory, which the prompts forbid for low-impact detections. The insect counterpart of SEASON_ANALYSIS_NUTRIENT_ENTITY_COVERAGE. Not critical.
+60	SEASON_ANALYSIS_NUTRIENT_ENTITY_COVERAGE
+Analysis
+Every individually named nutrient with a real (>0%) detection in season_data must appear somewhere in the analysis Nutrients section — not just the dominant nutrient driving the category-level scenario. Catches single-mission K/P/Mg detections silently dropped when a different nutrient (typically S or N) dominates the section narrative.
+61	SEASON_ANALYSIS_INSECT_SUPPORTING_ONLY_NOT_SOLE_DRIVER
+Analysis
+A supporting-evidence-only insect entry (Chewing Damage — "insufficient alone to assign a yield impact characterization" per the Insect Stage-Impact Reference) must not be the sole named entry in the Insects Type field while Materiality is Moderate/Significant or Season Priority is High/Moderate.
+62	SEASON_ANALYSIS_NO_BRAND_NAMES
+Analysis
+Analysis must not mention specific company names or product brands unless the exact name appears in season_data.
+63	SEASON_ANALYSIS_ROUNDING
+Analysis
+All numeric values in the analysis must be rounded to one decimal place (e.g., "4.6%" not "4.56%").
+64	SEASON_ANALYSIS_WEED_EFFECTIVE_PROHIBITED_EARLY_PRESSURE
+Analysis
+When early-season weed pressure (M1 or M2) was moderate or higher, the analysis must not credit weed management as "effective" without scoping that credit to post-emergence / later-season control — early pressure indicates pre-emergence underperformance. Describing later-season or post-emergence control as effective is explicitly permitted, as is stating that control was not effective or was achieved only after early-season competition.
+65	SEASON_ANALYSIS_EMERGENCE_OPTIMAL_NO_WEATHER
+Analysis
+When final stand count is optimal, the analysis emergence section must report the final count only — no earlier mission counts, and no weather of any kind (including "despite" framing).
+66	SEASON_ANALYSIS_NO_WEED_DROUGHT_MISATTRIBUTION
+Analysis
+Analysis must never attribute a weed-pressure increase to drought — drought suppresses weed growth just as it suppresses crop growth; rain events in the herbicide window are the actual driver of a weed-pressure increase.
+67	SEASON_SUMMARY_TWO_PART_FORMAT
+Summary
+Summary must begin with **Season Conclusion:** (bold header) followed by **Season Detail:** (bold header) — both section labels must be present. Season Conclusion must be ≤40 words and contain no numeric values (no %, no specific measurements, no bu/ac). Crop growth stages (V#, R#, VT, VE, VC, and ranges like VT–R1) are not numeric values and are allowed.
+68	SEASON_SUMMARY_LABELS_OWN_LINE
+Summary
+The **Season Conclusion:** and **Season Detail:** labels must each be followed by a single line break so their content begins on the next line — not inline on the same line as the label.
+69	SEASON_SUMMARY_DETAIL_BLOCK_SEPARATION
+Summary
+Season Detail must be structured as blank-line-separated blocks — an emergence block and one block per detected threat category (weeds, disease, nutrients, insects), plus a closing weather block if present — not a single run-on paragraph. When 2+ categories are covered, a blank line must separate them.
+70	SEASON_SUMMARY_NO_MERGED_STAGE
+Summary
+A growth stage must be cited as the mission's single Representative (dominant) stage — never two stage buckets joined by a slash (e.g. "VT-R1/R2-R4", "V3-V4/V4-V5").
+71	SEASON_SUMMARY_FORMAT
+Summary
+Summary uses the required two-part structure: **Season Conclusion:** and **Season Detail:** bold headers are required and allowed; no other markdown headers, bold section labels, or bullet points are permitted
+72	SEASON_SUMMARY_NO_NEXT_SEASON
+Summary
+Summary does not reference "next season", "upcoming season", or "next year"
+73	SEASON_SUMMARY_THREAT_CATEGORIES
+Summary
+Each detected threat category name (or alias) appears somewhere in the summary text
+74	SEASON_SUMMARY_YIELD_LANGUAGE
+Summary
+The Season Conclusion section must contain a single yield-impact sentence — it opens the summary, not closes it. If any threats caused yield impact, the sentence names specific threats (when few) or uses aggregate category language (when many), with hedged language ("likely reduced yield potential," "may have reduced yield potential," etc.) — never as a certainty, never with bu/ac figures or numeric values. If no threats caused yield impact, it states "No significant yield impact identified this season" or an equivalent neutral phrase. Only yield-impacting threats are named; resolved threats must not be referenced. Per-threat qualitative yield phrases in Season Detail (e.g., "likely negligible yield impact," "likely having a moderate yield impact") are allowed ONLY when a YIELD IMPACT DATA block is present in the input — they must not appear without yield data.
+75	SEASON_SUMMARY_NO_FABRICATION
+Summary
+Auto-fix
+Any specific named threat (species, disease, deficiency) mentioned in the summary must appear in the analysis
+76	SEASON_SUMMARY_WEATHER_GROUNDED
+Summary
+If summary mentions weather, weather data must be present in the analysis — no weather may appear in the summary if the analysis contains none
+77	SEASON_SUMMARY_WEATHER_DATE_QUANTITY
+Summary
+Auto-fix
+Every weather-event sentence must contain an exact date/duration — vague forms like "early frost" or "heavy rain" without a date fail (score 0). A quantitative measure (inches, °F) is additionally required for primary yield-explaining clauses; secondary disease-context sentences that have a date but no quantity score 5. Rain or precipitation must always include an amount in inches — "heavy rain" or "significant precipitation" without a quantity fails even if a date is present. If multiple rain events are cited together, the sum must be stated. Generic window labels (e.g., "planting window," "planting-to-emergence window") must not be used as a timeframe for a cited rainfall figure — a specific date range or sub-window (e.g., "in the 48 hours after planting," "May 5–6") is required; using a generic label scores 0. Discrete rain events separated by dry days must be cited individually — compressing them into a continuous range (e.g., "Jun 10–Jun 15" when events were Jun 10 and Jun 14 with dry days between) scores 0.
+78	SEASON_SUMMARY_NO_STANDALONE_WEATHER_BLOCK
+Summary
+Auto-fix
+Weather must never occupy its own Season Detail block. Every weather mention belongs inside the emergence or threat block it explains, and Season Detail ends with the last detected threat category — the closing extraordinary-weather sentence permitted by the v3/v1 prompts is banned as of v4/v2 (2026-08-18). Weather fused into a threat or emergence block is unaffected and still required in the disease-conducive and RAIN-DRIVEN-nutrient cases, so this fires only on a block whose sole subject is weather. Deliberately NOT critical: per DECISIONS.md #1 only non-weather checks land critical, and the deployed adapter was trained on GT that still contains the closing clause — flagging this critical would hide nearly every result until a retrained model ships.
+79	SEASON_SUMMARY_NO_DUPLICATE_CATEGORY_BLOCK
+Summary
+Auto-fix
+Each threat/emergence category gets ONE Season Detail block. A later block that only re-references categories an earlier block already covered is the same insight told twice and must be unified into the block that covers it. This is the non-weather half of SEASON_SUMMARY_NO_STANDALONE_WEATHER_BLOCK: both fault a block that introduces no category of its own, and the two triggers partition that set — a weather block EXPLAINS an earlier one, a duplicate RESTATES it. Deliberately NOT critical: telling the grower something twice is a quality defect, not a wrong claim.
+80	SEASON_RECO_NO_CONTRADICTORY_CATEGORY_DIRECTIVE
+Summary
+Auto-fix
+One category must not carry both a directive to change something and a directive to change nothing. This asks only whether the two can BOTH be followed, not which is right — SEASON_RECO_WEED_CONTINUE_ONLY_WHEN_MANAGED grades that question for weeds off the prompt's own three conditions, and notes that grading nutrients or diseases off Status alone would fault prompt-compliant text. Field 1312580 tells the grower to split the nitrogen application to reduce leaching risk AND to continue the current fertility program.
+81	SEASON_RECO_ONE_BLOCK_PER_CATEGORY
+Summary
+Auto-fix
+Every directive for one category must sit in a SINGLE recommendation block. Scattering it makes the grower assemble the advice themselves and invites the two halves to disagree — field 1312580 says to split the nitrogen application in one block and to continue the current fertility program in another. Graded on block STRUCTURE only; whether two directives for a category actually agree is a separate question this criterion does not ask.
+82	SEASON_SUMMARY_NUTRIENT_RAIN_DRIVEN_FRAMING
+Summary
+Auto-fix
+When the CATEGORY STATUS block fires a RAIN-DRIVEN TRIGGER for Sulfur or Nitrogen, the summary must describe that deficiency as rain/leaching-driven (appeared or intensified following heavy rainfall, leaching a likely contributor) regardless of the nutrient's Status. The trigger is computed deterministically, so this is ground truth rather than a judgement call. Scoped to blocks that actually name the nutrient — whether a triggered nutrient appears at all is SEASON_SUMMARY_NUTRIENT_ENTITY_COVERAGE's job. A presence check, unlike the other weather criteria which only validate weather that is already there; added 2026-08-18 when removing the standalone closing weather clause exposed that the clause had been carrying this attribution. Not critical.
+83	SEASON_SUMMARY_DISEASE_CONDUCIVE_CONDITIONS
+Summary
+Auto-fix
+When the analysis flags the low-VPD / disease-conducive signal and the summary describes an actual disease detection, a disease block must note that conditions were conducive to disease spread — mandatory regardless of the resulting pressure level, including the "pressure remained low despite conducive conditions" case. Satisfied only by the sanctioned plain-English framing ("conditions conducive to", "lent itself to"); citing VPD or copying the "disease-conducive humidity" label verbatim is separately banned (SEASON_SUMMARY_NO_VPD_DISEASE) and does not satisfy this. Does not fire when the summary reports no detected disease. Not critical.
+84	SEASON_SUMMARY_NO_FAVORABLE_CONDITIONS
+Summary
+Summary must not contain the phrase "favorable conditions" — explicitly banned by the prompt
+85	SEASON_SUMMARY_NO_YIELD_FIGURES
+Summary
+Summary must contain no bu/ac yield figures of any kind (score 0 if bu/ac present, 10 if compliant)
+86	SEASON_SUMMARY_WEATHER_IMPERIAL_UNITS
+Summary
+Weather clauses in the summary must use imperial units — inches for precipitation, °F for temperature; metric units (mm, cm, °C) are not acceptable
+87	SEASON_SUMMARY_FROST_SINGLE_DATE
+Summary
+Auto-fix
+If frost is mentioned, it must use a specific single date (e.g. "a frost on May 2") — a cross-month date range (e.g. "Apr 23–May 21") implies continuous frost and is not acceptable
+88	SEASON_SUMMARY_NO_COMPASS_DIRECTIONS
+Summary
+Summary must not use compass directions + location nouns (e.g. "northwestern corner", "NE section") — use hotspots/widespread/pockets instead
+89	SEASON_SUMMARY_GROWTH_STAGE_TIMING
+Summary
+Threat timing in the summary uses crop growth stages (V#, R#, VT, VE) — not calendar dates and never "Mission X/Y" alone without a growth stage. At least one growth stage reference is required when threats are detected. If no growth stage is available, timing is omitted entirely rather than substituting a mission number.
+90	SEASON_SUMMARY_NO_MANAGED_BARE_LABELS
+Summary
+Auto-fix
+Summary does not use bare "Managed" or "Unmanaged" as standalone labels — hedged forms like "likely managed," "consistent with management," "appears unmanaged," or "likely unresolved" are acceptable
+91	SEASON_SUMMARY_EMERGENCE_MULTIPASS_WEATHER
+Summary
+Auto-fix
+The single-flight rule is universal — there is no multi-flight exception for any tier (optimal, sub-optimal, or poor). The summary must never mention a second mission's stand-count % or GDD value alongside the final one, and must never use trajectory language ("advancing to", "advanced to", "reaching", "rising to") — report the latest reading only, regardless of tier. ADDITIONALLY: a cumulative planting-window rainfall total (e.g., "3.1 in of rain in the planting window") does NOT qualify as heavy/excess precipitation — citing it as an emergence stressor scores 0. Any total spanning more than 72 hours (e.g., "6.1 in over 24 days after planting") is a cumulative total — citing it scores 0 regardless of how the timeframe is described. A single-day "heavy precip" data flag (1–2 in) also does NOT qualify — citing it as an emergence stressor scores 0; the 48-hr window total must be ≥2 in or the 72-hr window total must be ≥3 in. If the only weather condition is Delayed rainfall (adequate total but arrived after 7 days from planting), use single-flight framing with no specific rain amount.
+92	SEASON_SUMMARY_NO_VPD_DISEASE
+Summary
+Summary must not cite VPD as a driver or contributor to disease pressure anywhere — VPD is forbidden as a narrative explanation for disease spread, infection risk, or disease development in the summary
+93	SEASON_SUMMARY_WEED_SPECIES_NAMED
+Summary
+When weed species names appear in the analysis, the summary must use those names — replacing them with generic terms like "broadleaf weeds" or "grass weeds" scores 0. Species names not present in the analysis must not be invented.
+94	SEASON_SUMMARY_NO_WEED_REBOUND
+Summary
+Summary must not use "rebounded" to describe weed pressure that increased following rain — use "increased" or "escalated" instead, noting that moisture promoted germination
+95	SEASON_SUMMARY_WEED_EFFECTIVE_PROHIBITED_EARLY_PRESSURE
+Summary
+When early-season weed pressure (M1 or M2) was moderate or higher, the summary must not credit weed management as "effective" without scoping that credit to post-emergence / later-season control — early pressure indicates pre-emergence underperformance. Describing later-season or post-emergence control as effective is explicitly permitted, as is stating that control was not effective or was achieved only after early-season competition
+96	SEASON_SUMMARY_EMERGENCE_NO_PLANTS_PER_ACRE
+Summary
+Summary must not include plants/acre values for emergence — report stand count as % of target only
+97	SEASON_SUMMARY_DISEASE_PER_PATHOGEN_TRAJECTORY
+Summary
+Every detected impact disease must be described with its own trajectory in the summary — when multiple impact diseases are detected, each must appear separately; they may be combined in one sentence only when their trajectories are identical. If an impact disease was detected in earlier missions but absent at the final mission, the summary must explicitly state this (e.g., "no longer detected at Mission 6"). Disease trajectory direction must be grounded in observed detection data — not inferred from weather events alone; if data shows stable readings before and after a rain event, the summary must not attribute a trajectory change to that rain.
+98	SEASON_SUMMARY_NUTRIENT_SN_STAGE_LEAD
+Summary
+Auto-fix
+When S or N deficiency is described in the summary and a significant rainfall event occurred in the same window: if deficiency first appeared after the rain, the summary must write "appeared following heavy rainfall"; if deficiency was already present before the rain, the summary must write "intensified following heavy rainfall" — framing a pre-existing deficiency as having appeared post-rain scores 0.
+99	SEASON_SUMMARY_NO_RELATIVE_TIMING_WITHOUT_STAGE
+Summary
+Auto-fix
+Summary must not use relative timing terms ("late in the season," "early in the season," "mid-season") without specifying the corresponding growth stage — write "at R3" not "late in the season"
+100	SEASON_SUMMARY_EMERGENCE_OPTIMAL_NO_WEATHER
+Summary
+Auto-fix
+When final stand count is optimal (≥90%), the summary must report the final count only — do not mention earlier mission counts, and do not cite weather of any kind. This includes "despite" framing (e.g., "strong emergence despite cool temperatures and heavy rain") — any weather reference alongside an optimal stand scores 0, whether framed as a cause, context, or contrast.
+101	SEASON_SUMMARY_NONIMPACT_DISEASE_BRIEF
+Summary
+Auto-fix
+Non-impact diseases detected in the season must be mentioned in the summary — group all non-impact diseases together in one brief clause using "considered low impact" phrasing (e.g., "downy mildew was detected but is considered low impact" — never "was also detected"; "also" has nothing to point at and is faulted even when a prior disease is in scope). A clause that states the same thing in its own words ("did not reach impactful thresholds", "low-impact") satisfies this — the mandated wording is not owed on top of it. No trajectory language, no yield language, no further detail. If no non-impact diseases were detected, this criterion is not applicable.
+102	SEASON_SUMMARY_BSR_SDS_COMBINED_LABEL
+Summary
+Auto-fix
+Where the record reports Brown Stem Rot / Sudden Death Syndrome, the summary must name it by the combined label ("Brown Stem Rot/Sudden Death Syndrome"; the record's "(SDS)" suffix is optional, and either half may appear as its acronym). The detection cannot separate the two, so the reading belongs to the pair and to neither half on its own: naming one component asserts a species identification the data never made, and naming both as separate diseases gives one reading two detection claims and doubles the apparent disease load. Applies however the record spells it — upstream writes both "Brown Stem Rot" and "Brown Stem Rot/Sudden Death Syndrome (SDS)" for the same class. Not applicable when the record reports no BSR/SDS detection, or when the summary does not mention it.
+103	SEASON_SUMMARY_REGIONAL_ONLY_IMPACT_DISEASE
+Summary
+Auto-fix
+If the analysis includes a Regional context note for an impact disease that was NOT detected in-field (regional-only), the summary must briefly acknowledge regional presence without describing a trajectory — e.g., "[Disease] was present in fields within [distance] regionally, but not detected in this field." Must not include a regional-only mention when the analysis does not provide explicit regional detections data (distance or field count).
+104	SEASON_SUMMARY_DISEASE_SPELLING
+Summary
+Summary must always spell Gray Leaf Spot with an "a" — "grey leaf spot" scores 0
+105	SEASON_SUMMARY_RUST_GENERIC_NAMING
+Summary
+Detection cannot distinguish rust species — summary must say plain "Rust", never "Common Rust" or "Southern Rust"; naming a specific species scores 0
+106	SEASON_SUMMARY_INSECT_LOW_IMPACT_GROUPING
+Summary
+Low-impact insects must not be mentioned in the Season Conclusion — only in a brief grouped clause in Season Detail
+107	SEASON_SUMMARY_SOY_DEFOLIATION_THRESHOLD
+Summary
+Soybean defoliation must be characterized using the prompt thresholds: <20% negligible/below treatment threshold, >=20% moderate/at treatment threshold, >=30% significant/above threshold canopy loss
+108	SEASON_SUMMARY_NATURAL_DECLINE_FRAMING
+Summary
+For natural-decline species (Japanese beetle, fall armyworm), late-season declines must not be attributed causally to management ("managed down", "due to management") — seasonal-flight-window subsidence framing is preferred; hedged managed language ("likely managed", "appeared managed") is accepted
+109	SEASON_SUMMARY_ROUNDING
+Summary
+All numeric values in the summary must be rounded to one decimal place (e.g., "4.6%" not "4.56%")
+110	SEASON_SUMMARY_SEVERITY_NEEDS_PERCENT
+Summary
+Auto-fix
+Severity labels (mild/moderate/high/very high) for diseases, insects, and nutrients must be paired with a measured % value in the same sentence — labels without a number score partial/no credit. Weed sentences must NOT include a % coverage value.
+111	SEASON_SUMMARY_FIRST_PERCENT_DETECTIONS_PHRASE
+Summary
+Auto-fix
+For disease, insect, and nutrient detections, the first % metric per threat category must be followed by "detections in the field" — the phrase must not repeat for later % values of the same threat
+112	SEASON_SUMMARY_EMERGENCE_CV_ABSENT_NO_UNIFORMITY
+Summary
+Auto-fix
+When CV data is absent from season_data, the Season Detail emergence sentence must not mention CV, uniformity, or spacing variability — a fabricated CV value or uniformity claim not present in the input data scores 0, even if the analysis text upstream was clean
+113	SEASON_SUMMARY_EMERGENCE_VARIABILITY_GROUNDED
+Summary
+Auto-fix
+If the recommendation carries the emergence planter-calibration ask (corn only), the summary's own emergence sentence must mention CV, uniformity, or spacing variability — a recommendation the summary gives no basis for reads as unsupported, even when the underlying analysis correctly carried the variability signal
+114	SEASON_SUMMARY_INSECT_CRITICAL_WINDOW_2
+Summary
+v2 of SEASON_SUMMARY_INSECT_CRITICAL_WINDOW, run side by side for comparison before v1 is retired (added 2026-08-14 after v1 was found to be almost entirely false positives against a live SA batch). Same rule, but: aggregates ALL per-mission "Critical window:" occurrences for an insect; only flags a significant/negligible mismatch when it can be attributed to a clause naming this insect alone, skipping clauses entangled with another insect or (summary text has no category headers to scope by) another threat category entirely, e.g. "Significant disease pressure ... and Japanese Beetle activity ..." must not flag Japanese Beetle.
+115	SEASON_SUMMARY_CONCLUSION_YIELD_IMPACT_COVERAGE
+Summary
+Auto-fix
+Season Conclusion must include exactly the threat categories whose Final_Yield_Impact (past + future bu/ac loss from the final mission, from the YIELD IMPACT DATA block) crosses the crop-specific threshold — corn: 3 bu/ac, soy: 1 bu/ac — and must omit any category that does not cross it
+116	SEASON_SUMMARY_CONCLUSION_SUBTHRESHOLD_FRAMING
+Summary
+Auto-fix
+Sibling of SEASON_SUMMARY_CONCLUSION_YIELD_IMPACT_COVERAGE, split out 2026-08-18. The Season Conclusion inclusion rule is asymmetric: a category at or above the crop Final_Yield_Impact threshold (corn 3 bu/ac, soy 1) must be named AS A CAUSE, while a category below the threshold may be named only favourably -- credited as controlled or as having no material impact. This check owns the second half: it fails only when a sub-threshold category appears in the blame clause (before any "despite"/"although"), e.g. "recurring nutrient deficiencies likely reduced yield potential" with nutrients at 0.26 bu/ac (field 1312164). Favourable mentions such as "effective weed and insect control" are explicitly allowed -- they accounted for 38 of the 80 failing cells on the 412-field GT baseline and are not defects.
+117	SEASON_SUMMARY_YIELD_PHRASE_CLOSES_BLOCK
+Summary
+Auto-fix
+The yield-impact phrase must CLOSE its Season Detail block — no sentence may follow it. This is the positional half of the prompt rule that every threat sentence "must end with" a phrase derived from its Materiality; SEASON_SUMMARY_THREAT_SENTENCE_YIELD_PHRASE grades that the phrase is present and carries the right qualifier. Anything the block still owes — a regional-disease note, a non-impact mention, the weather that explains the category — belongs before the verdict, not after it. Binary across the blocks that carry a phrase — position is per-block and either right or wrong; a block with none is not graded here.
+118	SEASON_SUMMARY_THREAT_SENTENCE_YIELD_PHRASE
+Summary
+Auto-fix
+When a CATEGORY STATUS block was computed for this record (it reaches the judge in its own field, not inside the analysis text), each threat category's Season Detail block must carry a qualitative yield-impact phrase derived from that category's Materiality field — Negligible/None -> "likely negligible yield impact", Moderate -> "likely having a moderate yield impact", Significant -> "likely having a significant yield impact". Wording may vary but the qualifier word must match the category's Materiality; do not re-derive the qualifier from severity language. Binary: a summary that omits one category's phrase is not partly right about that category, and proportional credit would score it above CORRECTION_THRESHOLD where no correction can reach it.
+119	SEASON_SUMMARY_THREAT_SENTENCE_YIELD_HEDGED
+Summary
+Auto-fix
+Sibling of SEASON_SUMMARY_THREAT_SENTENCE_YIELD_PHRASE, which checks the qualifier word (negligible/moderate/significant); this checks the claim itself is hedged. When a CATEGORY STATUS block was computed for this record, each detected threat category's Season Detail sentence that makes a yield-impact claim must hedge it ("likely negligible yield impact," "likely having a moderate yield impact," "projected yield loss," etc.) rather than assert it as a certainty ("had a significant yield impact," "reduced yield 5%"). A sentence stating no yield impact ("no yield impact" / "no significant yield impact") is exempt from hedging — that is correctly a plain fact, not a projection.
+120	SEASON_SUMMARY_NO_UNHEDGED_EFFECTIVE_MANAGEMENT
+Summary
+Auto-fix
+Season Conclusion must not assert a blanket "effective management" verdict for the whole season when the CATEGORY STATUS ground truth (copied into the analysis' Status: lines) shows any category as Unresolved. "Effective" is a definitive, unhedged claim of the same kind the Trajectory Language rules already ban for bare "Managed"/"Unmanaged" — hedged forms ("apparent effective management," "likely effective management," "appears to have been effectively managed") are acceptable.
+121	SEASON_SUMMARY_TREND_WORD_ACCURACY
+Summary
+A sentence must not describe a threat with a persistence/plateau verb ("remained", "persisted", "still present", "held", "continued") when its own cited percentages show a real decrease and no decreasing-family word ("decreasing", "consistent with management", "likely managed", "reduced") is also present in that sentence.
+122	SEASON_SUMMARY_NO_BRAND_NAMES
+Summary
+Summary must not mention specific company names or product brands unless the exact name appears in season_data.
+123	SEASON_SUMMARY_WEED_TREND_REACHES_FINAL_MISSION
+Summary
+Auto-fix
+The weed block's last stage-bound pressure claim must not be superseded by a mission the narrative never reaches. Field 1312426 says "remained moderate through V13-V16" of a record whose sixth and final mission records Pressure: high at R2-R4 — every clause true, and the season reported as ending moderate when it ended high. Neighbour to SEASON_SUMMARY_WEED_TREND_GROUNDED, which asks whether a resolution or decrease claim is CONTRADICTED by the final mission; a block that fails that one is not graded here, so one sentence is never two criteria's 0. Span claims ("remained high throughout the season") bind to no mission and reach the end by construction, so they are out of scope.
+124	SEASON_SUMMARY_NO_RAW_INSECT_OTHER_LABEL
+Summary
+Auto-fix
+The summary must name season_data's catch-all insect bucket in words — "other low-impact insects" — never by its data label ("Insect - Other", "Insect – Other", "Insect-Other"). The analysis carries the label deliberately, in Type: and Low-impact detections:, because those fields mirror the record; the summary is read by a grower, and "chewing damage at 14.1% detections in the field and Insect – Other at 2.2%" reads as a species that was never in the field.
+125	SEASON_SUMMARY_NO_DUPLICATE_RAIN_WINDOW
+Summary
+Auto-fix
+One Season Detail block must not attribute the same rain window twice. Every citation can be individually grounded and the block still say the same thing in two sentences — "A 2.7 in rain window between June 24 and July 11 likely contributed to sulfur leaching" followed by "Deficiencies appeared following a 2.7 in rain window between June 24 and July 11, with leaching a likely contributing factor" — which is what the per-citation criteria structurally cannot see. Two mentions inside ONE sentence state a single attribution and are not graded here.
+126	SEASON_SUMMARY_TREND_VERB_GROUNDED
+Summary
+Auto-fix
+Summary-side mirror of SEASON_ANALYSIS_TREND_VERB_GROUNDED: a trajectory verb must agree with the values either side of it, so "moderate at V0-VE, escalated to moderate at V1-V2" scores 0, and so does "(79.0% detections in the field), increased to 47.4% at V13-V16". Graded on Season Detail only.
+127	SEASON_SUMMARY_WEED_TREND_GROUNDED
+Summary
+Auto-fix
+A weed sentence must not use resolution/control language ("controlled", "resolved", "no longer a factor", "effectively controlled") when the record's actual final-mission Pressure label is still moderate or higher, nor claim a decrease when the final mission's label never actually dropped below the season's peak. Grounded directly in season_data's per-mission Pressure labels (weed severity has no percentage to cite), not in whatever the sentence itself happens to state — closes a gap TREND_WORD_ACCURACY cannot see, since that check only catches a persistence verb contradicted by a percentage cited in the SAME sentence, never a resolution/decrease claim checked against season_data itself.
+128	SEASON_SUMMARY_NUTRIENT_TREND_GROUNDED
+Summary
+Auto-fix
+A nutrient sentence must not claim an element is resolved/no-longer-detected when season_data's final mission still reports a real (>0%) detection for that same element. Per-element, not per-category — a category-level Unresolved status can coexist with one specific nutrient genuinely having resolved.
+129	SEASON_SUMMARY_DISEASE_TREND_GROUNDED
+Summary
+Auto-fix
+A disease sentence must not claim resolution ("gone by X", "no longer detected") for a pathogen still in-field at the record's true final mission, regardless of which mission the sentence itself cites as the resolution point. Per-pathogen, reusing the same processors/disease_detections.py mission parser DISEASE_PCT_MISATTRIBUTION already trusts.
+130	SEASON_SUMMARY_STAGE_CITED_NOT_RECORDED
+Summary
+Auto-fix
+A growth-stage token cited anywhere in the summary must match some mission's actual (Representative, or clearly-dominant) stage reading in season_data -- never a stage no mission recorded. Dominant pattern (c) from the original annotator review: a fabricated stage citation, distinct from the trend-language checks above.
+131	SEASON_SUMMARY_NUTRIENT_STAGE_ATTRIBUTION
+Summary
+Auto-fix
+A nutrient claim attributed to a specific stage must match that mission's own NUTRIENTS data -- not a stage whose mission reports no nutrient activity at all ("attributes activity to V4-V5; that mission reports none"), and not a different element than the one the mission actually lists ("names potassium at R2-R4; that mission lists other nutrients only").
+132	SEASON_SUMMARY_DISEASE_STAGE_ATTRIBUTION
+Summary
+Auto-fix
+A disease claimed in-field at a specific stage must match that mission's own DISEASES data -- not a stage with no disease activity at all, and not a disease that was only regional (or absent) there while a different one was actually in-field ("places Holcus Leaf Spot at V5-V12; not detected in-field there").
+133	SEASON_SUMMARY_DISEASE_RESOLUTION_STAGE
+Summary
+Auto-fix
+C1-ext-b: a claim that a disease was no longer detected must be dated -- by a growth-stage reference, or by the fallback the requirements doc itself permits ("at final assessment"). The reviewer-requested literal template "no longer detected by R2-R4" is deliberately NOT enforced: GROUNDING_AUDIT.md found no such template in the doc. A missing resolution statement is not flagged here -- that belongs to SEASON_*_DISEASE_PER_PATHOGEN_TRAJECTORY.
+134	SEASON_SUMMARY_CATEGORY_ABSENCE_GROUNDED
+Summary
+C1-ext-c: a blanket claim that a whole threat category had no detections across any/all missions must not be contradicted by any mission block. Requires a universal scope quantifier; late-season / early-season wording narrows the mission window checked.
+135	SEASON_SUMMARY_WEED_CONTROL_STAGE
+Summary
+C1-ext-a: a weed control-achieved claim ("controlled by X", "declined to mild by X") must name a stage whose mission was actually at or below the controlled (mild/none) Pressure label, and pressure must not exceed that level again afterwards. Scoped to the banned-phrasing rule in the doc; the stronger reviewer "must name the EARLIEST controlled mission" reading is deliberately NOT implemented -- it fired on 58/412 GT fields, almost all correct prose, and has no doc basis.
+136	SEASON_SUMMARY_WEED_STAGE_ATTRIBUTION
+Summary
+Auto-fix
+A weed-pressure severity, peak or first-detection claim tied to a growth stage must match the Pressure label the mission at that stage actually recorded. Per the requirements doc SS Content-Weeds the engine validates OVERALL pressure, not per-species trajectories (which the doc forbids the output from containing at all).
+137	SEASON_SUMMARY_INSECT_STAGE_ATTRIBUTION_2
+Summary
+Auto-fix
+v2 of SEASON_SUMMARY_INSECT_STAGE_ATTRIBUTION, run side by side for comparison before v1 is retired (added 2026-08-15 after v1 was found to be 7/10 false positives on a live SA batch). Same rule, but: matches "detected" + stage token within the same clause only, not anywhere later in the sentence (compound sentences naming multiple insects were letting one insect's bare "detected" borrow a different, later insect's own stage citation); skips any clause with a negated "detected" ("not detected", "went undetected") rather than reading it as a positive claim; and resolves insect mentions through an alias map so a narrative eliding season_data's generic suffix ("stink bug" for "stink bug damage") still resolves correctly instead of falling back to an unrelated nearby insect name. A claim that cites an accurate 0%/absent value at one endpoint of a season-long range (e.g. "ranging from 0.0% at V1-V2 to 0.7% at R2-R4") is still flagged -- that framing is what this check exists to catch, not a matching bug.
+138	SEASON_SUMMARY_NUTRIENT_RAIN_MAGNITUDE_THRESHOLD
+Summary
+A nitrogen/sulfur deficiency must not be attributed to a rain event below the ~2 in heavy-precip materiality threshold used elsewhere in this record's weather data -- too small to plausibly drive leaching.
+139	SEASON_SUMMARY_RAIN_WINDOW_NOT_EVENT
+Summary
+Auto-fix
+A multi-day rainfall window total must not be presented as a single rain or precipitation "event" (e.g. "a 5.6 in rain event between June 19 and July 7"). Per Weather Clause Rules, discrete rain events must not be compressed into a continuous date range, and a cited precipitation amount must state whether it is a single event or cumulative. Cite the figure as a cumulative window/period total, or cite the discrete events individually. A range of at most 3 days is still a single event (the doc treats up to 72 h as one occurrence).
+140	SEASON_SUMMARY_EXTREME_PRECIP_THRESHOLD
+Summary
+Auto-fix
+Per Weather Clause Rules, "extreme" must not describe a precipitation event below ~3 in — a >=2 in event is "heavy". Each inch figure is bound to its nearest severity adjective, so a sentence that correctly labels a large event "extreme" and a smaller one "heavy" passes.
+141	SEASON_SUMMARY_PRECIP_WINDOW_ATTRIBUTION
+Summary
+Auto-fix
+A precipitation total cited for a specific date range (e.g. "2.2 in of rain between Jun 28-Jul 15") must be that window's own total in season_data -- not another window's figure reused against the wrong dates.
+142	SEASON_SUMMARY_PRECIP_DOMINANT_EVENT_ATTRIBUTION
+Summary
+Auto-fix
+When a weather window's total is almost entirely one heavy-precip-flagged day (that day alone clears the ~2 in heavy-precip materiality threshold, and the window's remaining precipitation does not), the summary must cite that day as the event -- not the multi-day window range, which understates how concentrated the rainfall actually was and buries the actual point of interest.
+143	SEASON_SUMMARY_INSECT_ENTITY_COVERAGE
+Summary
+Auto-fix
+Every insect individually named in the analysis Insects section must be carried into the summary — not just the species driving the category narrative. "Insect - Other" is satisfied by the mandated rendering ("other low-impact insects"), never by the raw label, which is separately banned from output. The insect counterpart of SEASON_SUMMARY_NUTRIENT_ENTITY_COVERAGE. Not critical.
+144	SEASON_SUMMARY_NUTRIENT_ENTITY_COVERAGE
+Summary
+Every individually named nutrient present in the analysis Nutrients section must be carried into the summary — not just the nutrient driving the category's dominant scenario.
+145	SEASON_SUMMARY_NUTRIENT_TRAJECTORY_NOT_COLLAPSED
+Summary
+C9 — a nutrient recorded at three or more missions with a genuinely moving series must not be reported as a single point reading. The sentence satisfies this with a second percentage of its own or with a trend/resolution word; no specific phrasing is required. 1312426: potassium reads 1.9%% -> 4.9%% -> 0.9%% and the summary reported only "4.9%% at V13-V16", erasing both the rise and the decline.
+146	SEASON_SUMMARY_DISEASE_TRAJECTORY_NOT_COLLAPSED
+Summary
+C9, disease side — a pathogen recorded at three or more missions with a moving series must not be reported as a single point reading.
+147	SEASON_SUMMARY_NUTRIENT_LEACHING_SN_ONLY
+Summary
+Rain/leaching causal framing for a nutrient deficiency ("appeared/intensified following heavy rainfall," "leaching") is reserved for Sulfur or Nitrogen — Potassium, Phosphorus, and Magnesium are structural deficiencies (see the STRUCTURAL DEFICIENCY TRIGGER path) and must never be described as rain/leaching-driven, regardless of Status.
+148	SEASON_SUMMARY_NO_WEED_DROUGHT_MISATTRIBUTION
+Summary
+Summary must never attribute a weed-pressure increase to drought — drought suppresses weed growth just as it suppresses crop growth; rain events in the herbicide window are the actual driver of a weed-pressure increase.
+149	SEASON_RECO_WORD_COUNT
+Recommendation
+Recommendation is ≤260 words (score 10 if ≤260, 0 otherwise)
+150	SEASON_RECO_MAX_LENGTH
+Recommendation
+Critical
+Recommendation text must not exceed 3000 characters (score 0 if exceeded, 10 otherwise). Flagged critical=True in the subscriber repo, where failing this hides all results and blocks the result-created event
+151	SEASON_RECO_FORMAT
+Recommendation
+Recommendation has no markdown headers, bold labels, or bullet points (blank-line-separated blocks are allowed)
+152	SEASON_RECO_BLOCK_SEPARATION
+Recommendation
+Recommendation must be structured as blank-line-separated blocks — emergence (if it warrants a recommendation) and each threat category (weeds, disease, nutrients, insects) that warrants one — not a single run-on paragraph. When 2+ categories are covered, a blank line must separate them.
+153	SEASON_RECO_FUTURE_ORIENTED
+Recommendation
+Recommendation contains "next season" or a growth stage reference (V#, R#, VT, VE), indicating forward-looking framing
+154	SEASON_RECO_UNMANAGED_ADDRESSED
+Recommendation
+Auto-fix
+Each unmanaged threat from the analysis is mentioned in the recommendation
+155	SEASON_RECO_MANAGED_ADDRESSED
+Recommendation
+Auto-fix
+Each Managed disease/insect category from the analysis is mentioned in the recommendation, rather than being silently omitted — a Managed category with low/negligible yield impact is still owed the "management was effective — continue the current program" line the prompt mandates. Weeds and nutrients are excluded: they have their own dedicated continue-language checks where "continue" is one branch of a more specific verdict.
+156	SEASON_RECO_NO_THREAT_ADDRESSED
+Recommendation
+Auto-fix
+Each No-Threat category from CATEGORY STATUS (weeds, disease, nutrients, insects alike) is mentioned in the recommendation, rather than being silently omitted — a No-Threat category is still owed the "continue current practices" line the prompt mandates. Distinct from SEASON_RECO_MANAGED_ADDRESSED, which is scoped to Managed disease/insect categories and never sees a No-Threat one: the analysis parser excludes No-Threat categories from managed_threats entirely, so nothing else grades this case.
+157	SEASON_RECO_NO_FABRICATION
+Recommendation
+Auto-fix
+Recommendation does not mention threat categories absent from the analysis
+158	SEASON_RECO_NO_YIELD_FIGURES
+Recommendation
+Recommendation must not contain bu/ac or bu/acre yield figures
+159	SEASON_RECO_NO_GENERAL_MONITORING
+Recommendation
+Auto-fix
+Recommendation must not use generic monitoring language (e.g. "continue monitoring", "monitor the field", "monitor crop health") — give specific pre-season planning actions instead. Exception: specific insect template forms "monitor for [insect/detection signal] beginning at [stage]" are allowed and required.
+160	SEASON_RECO_NO_COMPASS_DIRECTIONS
+Recommendation
+Recommendation must not use compass directions + location nouns for field zones — use distribution language instead
+161	SEASON_RECO_RUST_GENERIC_NAMING
+Recommendation
+Detection cannot distinguish rust species — recommendation must say plain "Rust", never "Common Rust" or "Southern Rust"; naming a specific species scores 0
+162	SEASON_RECO_NUTRIENT_DEFICIENCY_TYPE
+Recommendation
+For weather-driven nutrient deficiencies (S or N — first appeared after significant precipitation): recommendation must not default to soil sampling; recommend reviewing nutrient timing and loss mitigation instead. If S or N deficiency was first detected before the rainfall event (rainfall intensified a pre-existing deficiency), classify as persistent and address overall fertility strategy — not weather-driven loss specifically. Soil sampling is appropriate only for structural deficiencies (K, P, Mg — persistent or spatially consistent with soil variability).
+163	SEASON_RECO_NUTRIENT_LEACHING_SN_ONLY
+Recommendation
+Rain/leaching causal framing ("splitting your application to reduce the risk of leaching," "rain-driven loss") is reserved for Sulfur or Nitrogen — Potassium, Phosphorus, and Magnesium are structural deficiencies and must get the soil-sampling recommendation instead, never rain/leaching-mitigation language, regardless of Status.
+164	SEASON_RECO_NUTRIENT_LEACHING_RAIN_PRECEDES_DETECTION
+Recommendation
+Auto-fix
+Leaching-mitigation language for Sulfur or Nitrogen ("consider splitting your application to reduce the risk of leaching") requires that element's FIRST detection in season_data to follow a qualifying heavy/extreme-precip weather window. Per the requirements doc: "If deficiency was first detected before the rainfall event, classify as 'persistent across multiple passes' instead — address overall fertility strategy, not weather-driven loss specifically." Derived from season_data (per-element first detection vs. weather windows), not from the computed CATEGORY STATUS directive, so the rule is live in both the GT and the production record shapes.
+165	SEASON_RECO_WEED_PERSISTENCE_CLAIM_GROUNDED
+Recommendation
+Auto-fix
+A weed persistence claim in the recommendation ("given persistent escapes", "persisting species", "persistent weed pressure") requires evidence of persistence in season_data: a "was persistent over multiple flights" annotation, or moderate-or-higher weed pressure at the FINAL mission. Per the requirements doc's Trajectory Language, "persisted" may be used only when the threat held through the final mission; and the Weeds Analysis Matrix reserves the "given persistent escapes" template for the Unresolved rows, not for a field whose pressure was controlled to mild/none by the final mission.
+166	SEASON_RECO_DISEASE_RESPONSE_FRAMING
+Recommendation
+Auto-fix
+Disease recommendations must frame action as being ready to respond — not committing to a preventive program upfront. Acceptable: "be ready to spray a fungicide targeting [pathogen] if pressure develops," "prepare a fungicide response plan." Not acceptable: "plan a preventive fungicide program," "apply a fungicide at [stage]" as a default action, or "Establish a Disease Management Program" as an opener — that phrase commits to a standing program even when followed by conditional language in the same sentence, whether or not the disease was ever actually detected in-field.
+167	SEASON_RECO_NO_NONIMPACT_DISEASE_RESPONSE
+Recommendation
+Recommendation must not mention non-impact diseases at all — no acknowledgment, no "resolved," no "no action needed," no forward-looking response. Impact diseases and their accepted aliases (the ONLY diseases that may appear): Corn — Tar Spot; Northern Corn Leaf Blight / NCLB / Turcicum Leaf Blight / Tercicum Corn Leaf Blight / Northern Leaf Blight; Rust; Gray Leaf Spot / GLS. Soy — Brown Spot / Septoria Brown Spot / Septoria Leaf Spot / Leaf Spot of Soybean; Sudden Death Syndrome / SDS; Frogeye Leaf Spot / Frogeye; Brown Stem Rot / BSR. Any disease not in the above list is non-impact and must be completely absent — including soybean rust / asian soybean rust, downy mildew, anthracnose, physoderma, diplodia, gibberella, cercospora, goss's wilt, bacterial leaf streak, eyespot, smut, phytophthora root rot, White mold / Sclerotinia (explicitly named as a required-omission example in the recommendation prompt). Score 0 if any non-impact disease name appears anywhere in the recommendation.
+168	SEASON_RECO_NO_RAW_INSECT_OTHER_LABEL
+Recommendation
+Auto-fix
+Recommendation-side mirror of SEASON_SUMMARY_NO_RAW_INSECT_OTHER_LABEL: the catch-all insect bucket is named "other low-impact insects", never by its season_data label.
+169	SEASON_RECO_NO_REPLANTING
+Recommendation
+Recommendation must not suggest replanting as a solution to low stand count
+170	SEASON_RECO_WEED_POST_EM_TIMING
+Recommendation
+Auto-fix
+Post-emergence timing guidance is required exactly when a mission after M2 reached moderate or higher weed pressure, and must not appear when it did not. Independent of the pre-emergence verdict — a field whose pre-emergence program also needs strengthening carries both sentences in the same weed block
+171	SEASON_RECO_WEED_PRE_EM_ACCURATE
+Recommendation
+Auto-fix
+Weed recommendation must not call for a "more robust" or strengthened pre-emergence program when the pre-emergence program was working: early-season weed pressure (M1–M2) was none, or was mild and did not increase after M2. A late-season escalation off NONE early pressure is a post-emergence problem — the recommendation must address post-emergence timing, not pre-emergence strengthening. Mild early pressure that then increased after M2 DOES require strengthening — critical: failing this hides all results and blocks the result-created event
+172	SEASON_RECO_NO_VPD_DISEASE
+Recommendation
+Recommendation must not cite VPD as a driver or contributor to disease pressure — VPD is forbidden as a disease narrative explanation in the recommendation
+173	SEASON_RECO_WEED_PRE_EM_HIGH_EARLY_PRESSURE
+Recommendation
+When early-season weed pressure (M1 or M2) was moderate or higher, the recommendation must acknowledge that pre-emergence control was incomplete and call for strengthening it — it must not simply say "continue current weed management strategy" without addressing the pre-em failure
+174	SEASON_RECO_WEED_CONTINUE_ONLY_WHEN_MANAGED
+Recommendation
+Auto-fix
+"Continue the current program" is the Managed-category template and must not be given for weeds when the record says the program needs changing. Per the recommendation prompt's own rule, that sentence is valid only when the derived Pre-emergence program reads Effective AND Post-emergence timing is not Needs review AND the weeds Status is Managed; if any of the three says otherwise, a standing-pat directive scores 0. Weeds only — the nutrient and disease "continue current ... program" sentences have their own conditional branches in the prompt and are not graded here.
+175	SEASON_RECO_NO_UNHEDGED_EFFECTIVE_MANAGEMENT
+Recommendation
+Auto-fix
+A recommendation must not call a category's management "effective" (or "successful", "working well") while the CATEGORY STATUS ground truth still has that category unresolved — e.g. "Weed management was effective — continue the current program." against Weeds: Status=Unresolved. Judged per category, against the status of the category the claim is about: an effectiveness claim for a genuinely Managed category is correct and is not graded here. A hedged claim ("management appears to have been effective") is also not graded. Unlike SEASON_RECO_NO_EFFECTIVENESS_CONTRADICTION, no directive contradicting the claim is needed — the claim is ungrounded on its own.
+176	SEASON_RECO_NO_EFFECTIVENESS_CONTRADICTION
+Recommendation
+Auto-fix
+A recommendation must not assert that a practice/program "was effective" and then, in the same breath, recommend redesigning or strengthening that same practice (e.g. "The pre-emergence weed control program was effective ... Consider redesigning the weed management program with a stronger pre-emergence residual ..."). Pick one framing.
+177	SEASON_RECO_SOY_DEFOLIATION_WINDOW
+Recommendation
+Soybean defoliation recommendations must anchor to the R1-R3 canopy-protection window regardless of the stage at which defoliation was actually detected (e.g., detected at R4 still frames next-season action around R1-R3)
+178	SEASON_RECO_DISEASE_ROTATION_DEBRIS
+Recommendation
+Auto-fix
+For corn diseases where the pathogen overwinters in crop debris (NCLB, Tar Spot, Gray Leaf Spot), the recommendation must include a sentence on crop rotation and debris management
+179	SEASON_RECO_DISEASE_NO_REPEATED_SENTENCES
+Recommendation
+When 2+ impact diseases are addressed in the recommendation, the "be ready to spray a fungicide..." readiness sentence must combine every qualifying disease into ONE sentence, and the "...management was effective — continue the current fungicide program" sentence must combine every managed disease into ONE sentence — never one sentence repeated per disease.
+180	SEASON_RECO_NO_REPEATED_SENTENCE
+Recommendation
+Auto-fix
+No sentence of substantive length should appear twice, verbatim, anywhere in the recommendation — regardless of category. Field 1312580's potassium-deficiency directive ("Consider soil sampling the affected areas and adjusting the fertility program before planting to address persistent potassium deficiency.") was written, then written again immediately after, in the same block. Distinct from SEASON_RECO_DISEASE_NO_REPEATED_SENTENCES, which is about one disease-readiness template being issued once per disease instead of combined — this catches the category-agnostic case of the same sentence simply being duplicated. Short boilerplate ("Continue the current program.") is not graded here; only sentences long enough to carry field-specific content are.
+181	SEASON_RECO_NO_FUNGICIDE_FOR_NON_FOLIAR_DISEASE
+Recommendation
+Auto-fix
+Sudden Death Syndrome (SDS) and Brown Stem Rot (BSR) are soil-borne/vascular diseases — a foliar fungicide application does not control them. They must never be named in the "be ready to spray a fungicide..." readiness sentence or the "...management was effective — continue the current fungicide program" managed sentence, regardless of their Status. They remain impact diseases for analysis/summary/Season Conclusion purposes — this rule applies to the recommendation only.
+182	SEASON_RECO_NO_HYBRID_SELECTION_FOR_COLD_STRESS
+Recommendation
+Poor emergence driven by frost/cold stress has no defined recommendation action. The recommendation must not invent a hybrid or variety selection action framed as a cold-stress/frost mitigation for emergence — growers already select planting dates to avoid frost, and hybrid choice depends on considerations outside this analysis. Omit the emergence block entirely instead.
+183	SEASON_RECO_NO_NONESCALATING_REGIONAL_DISEASE
+Recommendation
+A REGIONAL PRESENCE disease (regional-only, never in-field, no escalation — analysis says "...was not detected in this field" with no escalation verb) is a different case from REGIONAL ESCALATION TRIGGER and must not appear in the recommendation at all — the CATEGORY STATUS block explicitly says no recommendation is required on that basis alone.
+184	SEASON_RECO_DISEASE_NO_NUMERIC_DETAIL
+Recommendation
+Recommendation must never cite a per-disease peak percentage, final percentage, or specific growth-stage detection window (e.g. "peaked at 23.0%", "first detected at V13-V16") for any disease — that level of numeric/stage detail belongs in the analysis only, not the recommendation, whether written as its own sentence or stitched into a shared sentence with semicolons.
+185	SEASON_RECO_NO_GENERIC_FILLER
+Recommendation
+Recommendation must not end (or begin) with a generic filler/summary sentence that restates the recommendation in vague terms without adding a new action or detail
+186	SEASON_RECO_NO_BRAND_NAMES
+Recommendation
+Recommendation must not mention specific company names or product brands unless the exact name appears in season_data.
+187	SEASON_RECO_ROUNDING
+Recommendation
+All numeric values in the recommendation must be rounded to one decimal place (e.g., "4.6%" not "4.56%").
+188	SEASON_RECO_NO_WEATHER_REPEAT_ASSERTION
+Recommendation
+Recommendation must not assert that next season's weather will resemble this season's — weather may only appear as hedged conditional language (e.g., "if similar weather conditions appear next season").
+189	SEASON_RECO_SPECIES_SUPPORTED
+Recommendation
+N7 — a recommendation that names weed species must name at least one the record still supports: present in the FINAL mission's "Impactful weeds species detected" list, present in the list of a mission at the season's PEAK weed pressure, or annotated "was persistent over multiple flights" somewhere in the season. Relaxed 2026-08-19 from the original every-species form (which failed 1312426 on "barnyard grass" alone) — a single supported species now satisfies the criterion — and again 2026-08-27 with the season-peak route, because 17 of the 18 records then failing end on 0.0% weed coverage: the final list they were graded against belongs to a flight that measured no weeds.
+190	SEASON_RECO_EMERGENCE_PLANTER_CALIBRATION
+Recommendation
+Auto-fix
+N4 — when the emergence scenario is sub-optimal (not "Good Emergence") AND season_data's own emergence prose carries a variability flag ("high variability", "possible issues at planting", low-stand regions, high spacing variation), the recommendation must include a planting-equipment clause (planter calibration, singulation, seeding depth, seed spacing). Triggered off the prose flags rather than a CV value, because a field can be flagged variable with no CV present at all (1312426).
+191	SEASON_RECO_NO_UNGROUNDED_PLANTER_CALIBRATION
+Recommendation
+Inverse of N4 (SEASON_RECO_EMERGENCE_PLANTER_CALIBRATION): a planting-equipment clause (planter calibration, singulation, seeding depth, seed spacing) must itself be grounded in a real emergence-variability signal — a sub-optimal, corn emergence scenario carrying a variability flag in season_data. A recommendation that reaches for this clause off a good/optimal stand, off soy, or with no variability flag at all is unsupported.
